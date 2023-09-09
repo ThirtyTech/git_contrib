@@ -13,14 +13,28 @@ public static class Work
 		using (var repo = new Repository(directory))
 		{
 			var branches = repo.Branches;
-			var commits = repo.Commits.Where(c => c.Committer.When >= fromDate);
+			var filter = new CommitFilter
+			{
+				SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
+			};
+			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate).Where(c => c.Parents.Count() == 1);
 			var commitsByAuthor = commits.GroupBy(c => c.Author.Name);
+
 
 			var authors = commits.Select(c => c.Author.ToString()).Distinct();
 			var reducedAuthors = authors.Select(a => mailmap.Validate(a)).Distinct();
 			var linesChanged = commits.Select(c => repo.Diff.Compare<Patch>(c.Parents.FirstOrDefault()?.Tree, c.Tree));
-			var commitsDoneByAuthor = commitsByAuthor.Select(g => new { Author = g.Key, Commits = g.Count() });
-			var filesChangedByAuthor = commitsByAuthor.Select(g => new { Author = g.Key, Files = g.SelectMany(c => c.Tree.Select(t =>  t.Path)).Distinct().Count() });
+			var commitsDoneByAuthor = commitsByAuthor.Select(g => new
+			{
+				Author = g.Key,
+				Commits = g.Count()
+			});
+			var filesChangedByAuthor = commitsByAuthor.Select(g => new
+			{
+				Author = g.Key,
+				Files = g.SelectMany(c => c.Tree.Select(t => t.Path)).Distinct().Count()
+			});
+
 			foreach (var file in filesChangedByAuthor)
 			{
 				Console.WriteLine(file.Author + ": " + file.Files);
