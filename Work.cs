@@ -19,8 +19,6 @@ public static class Work
 			};
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate).Where(c => c.Parents.Count() == 1);
 			var commitsByAuthor = commits.GroupBy(c => c.Author.Name);
-
-
 			var authors = commits.Select(c => c.Author.ToString()).Distinct();
 			var reducedAuthors = authors.Select(a => mailmap.Validate(a)).Distinct();
 			var linesChanged = commits.Select(c => repo.Diff.Compare<Patch>(c.Parents.FirstOrDefault()?.Tree, c.Tree));
@@ -35,10 +33,12 @@ public static class Work
 				Files = g.SelectMany(c => c.Tree.Select(t => t.Path)).Distinct().Count()
 			});
 
+			Console.WriteLine("############## Authors ##############");
 			foreach (var file in filesChangedByAuthor)
 			{
 				Console.WriteLine(file.Author + ": " + file.Files);
 			}
+			Console.WriteLine("#####################################\n");
 			foreach (var commit in commitsDoneByAuthor)
 			{
 				Console.WriteLine(commit.Author + ": " + commit.Commits);
@@ -51,14 +51,18 @@ public static class Work
 			{
 				Console.WriteLine(author);
 			}
+			Console.WriteLine("############## Branches ##############");
 			foreach (var branch in branches)
 			{
 				Console.WriteLine(branch.FriendlyName);
 			}
+			Console.WriteLine("#####################################\n");
+			Console.WriteLine("############## Commits ##############");
 			foreach (var commit in commits)
 			{
 				Console.WriteLine(commit.MessageShort);
 			}
+			Console.WriteLine("#####################################\n");
 		}
 	}
 
