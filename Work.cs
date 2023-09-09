@@ -14,7 +14,7 @@ public static class Work
 			var authors = repo.Commits.Select(c => c.Author.Name).Distinct();
 			var linesChanged = repo.Commits.Where(c => c.Committer.When >= fromDate).Select(c => repo.Diff.Compare<Patch>(c.Parents.FirstOrDefault()?.Tree, c.Tree));
 			var commitsDoneByAuthor = repo.Commits.Where(c => c.Committer.When >= fromDate).GroupBy(c => c.Author.Name).Select(g => new { Author = g.Key, Commits = g.Count() });
-			var filesChangedByAuthor = repo.Commits.Where(c => c.Committer.When >= fromDate).GroupBy(c => c.Author.Name).Select(g => new { Author = g.Key, Files = g.SelectMany(c => c.Tree.Select(t => t.Path)).Distinct().Count() });
+			var filesChangedByAuthor = repo.Commits.Where(c => c.Committer.When >= fromDate).GroupBy(c => c.Author.Name).Select(g => new { Author = g.Key, Files = g.SelectMany(c => c.Tree.Select(t =>  t.Path)).Distinct().Count() });
 			foreach (var file in filesChangedByAuthor)
 			{
 				Console.WriteLine(file.Author + ": " + file.Files);
