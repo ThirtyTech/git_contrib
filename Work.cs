@@ -55,6 +55,10 @@ public static class Work
 			{
 				Console.WriteLine(branch.FriendlyName);
 			}
+			foreach (var commit in commits)
+			{
+				Console.WriteLine(commit.MessageShort);
+			}
 		}
 	}
 
