@@ -8,7 +8,7 @@ public static class Work
 	{
 
 		Console.WriteLine("Processing directory: " + directory);
-
+		var mailmap = new Mailmap(directory);
 		// Get current directory
 		using (var repo = new Repository(directory))
 		{
@@ -16,7 +16,8 @@ public static class Work
 			var commits = repo.Commits.Where(c => c.Committer.When >= fromDate);
 			var commitsByAuthor = commits.GroupBy(c => c.Author.Name);
 
-			var authors = commits.Select(c => c.Author.Name).Distinct();
+			var authors = commits.Select(c => c.Author.ToString()).Distinct();
+			var reducedAuthors = authors.Select(a => mailmap.Validate(a)).Distinct();
 			var linesChanged = commits.Select(c => repo.Diff.Compare<Patch>(c.Parents.FirstOrDefault()?.Tree, c.Tree));
 			var commitsDoneByAuthor = commitsByAuthor.Select(g => new { Author = g.Key, Commits = g.Count() });
 			var filesChangedByAuthor = commitsByAuthor.Select(g => new { Author = g.Key, Files = g.SelectMany(c => c.Tree.Select(t =>  t.Path)).Distinct().Count() });
@@ -32,7 +33,7 @@ public static class Work
 			{
 				Console.WriteLine(line.LinesAdded + line.LinesDeleted);
 			}
-			foreach (var author in authors)
+			foreach (var author in reducedAuthors)
 			{
 				Console.WriteLine(author);
 			}

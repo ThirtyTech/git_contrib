@@ -23,6 +23,10 @@ root.SetHandler(async (folder, fromDate) =>
 	{
 		Work.DoWork(folder, date);
 	}
+	else { 
+
+		Work.DoWork(folder, DateTime.MinValue);
+	}
 }, Folder, FromDate);
 
 await root.InvokeAsync(args);
