@@ -16,6 +16,7 @@ var root = new RootCommand {
 	Folder
 
 };
+//One line change for testing
 
 root.SetHandler(async (folder, fromDate) =>
 {
