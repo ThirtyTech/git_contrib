@@ -8,13 +8,14 @@ public static class Work
 	{
 
 		Console.WriteLine("Processing directory: " + directory);
+		// Making commit for the same of it here
 		var mailmap = new Mailmap(directory);
-		// Get current directory
 		using (var repo = new Repository(directory))
 		{
 			var branches = repo.Branches;
 			var filter = new CommitFilter
 			{
+				IncludeReachableFrom = repo.Refs,
 				SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
 			};
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate).Where(c => c.Parents.Count() == 1);
