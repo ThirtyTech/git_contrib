@@ -12,12 +12,6 @@ public static class Work
 		using (var repo = new Repository(directory))
 		{
 			var mailmap = new Mailmap(directory);
-			// Console.Write all entries in mailmap
-			foreach (var entry in mailmap)
-			{
-				Console.WriteLine(entry.Key + " -> " + entry.Value);
-			}
-			var branches = repo.Branches;
 			var filter = new CommitFilter
 			{
 				IncludeReachableFrom = repo.Refs,
