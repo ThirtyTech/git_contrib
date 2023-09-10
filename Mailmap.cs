@@ -1,4 +1,5 @@
 using System.Collections;
+using LibGit2Sharp;
 
 public class Mailmap : IDictionary<string, string>
 {
@@ -23,12 +24,12 @@ public class Mailmap : IDictionary<string, string>
 		}
 	}
 
-	public string? Validate(string author)
+	public string Validate(string author)
 	{
-		if (_mailmap.TryGetValue(author, out var correctAuthor))
+		if (_mailmap.TryGetValue(author.ToString(), out var correctAuthor))
 			return correctAuthor;
 
-		return author;
+		return author.ToString();
 	}
 
 	public string this[string key]

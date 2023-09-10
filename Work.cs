@@ -19,49 +19,58 @@ public static class Work
 				SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
 			};
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate)
-		 	// Filters out merged branch commits;	
+			// Filters out merged branch commits;	
 			.Where(c => c.Parents.Count() == 1);
 			var commitsByAuthor = commits.GroupBy(c => c.Author.Name);
 			var authors = commits.Select(c => c.Author.ToString()).Distinct();
 			var reducedAuthors = authors.Select(a => mailmap.Validate(a)).Distinct();
-			var linesChanged = commits.Select(c => repo.Diff.Compare<Patch>(c.Parents.FirstOrDefault()?.Tree, c.Tree));
-			var commitsDoneByAuthor = commitsByAuthor.Select(g => new
+
+			var uniqueCommits = commits.Select(c => new
 			{
-				Author = g.Key,
-				Commits = g.Count()
-			});
-			var filesChangedByAuthor = commitsByAuthor.Select(g => new
+				UniqueHash = (c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content).GetHashCode(),
+				Commit = c
+			}).DistinctBy(c => c.UniqueHash).Select(c => c.Commit);
+
+			var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
+
+			// Loop through each group of commits by author
+			var authorContribs = uniqueCommitsGroupedByAuthor.Select(author => new AuthorContrib
 			{
-				Author = g.Key,
-				Files = g.SelectMany(c => c.Tree.Select(t => t.Path)).Distinct().Count()
+				Author = author.Key,
+				Project = directory,
+				Commits = author.ToList(),
+				Totals = new Totals
+				{
+					Commits = author.Count(),
+					Files = author.SelectMany(c => c.Tree.Select(t => t.Path)).Distinct().Count(),
+					Lines = author.Select(c => repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree)).Sum(p => p.LinesAdded + p.LinesDeleted)
+				}
 			});
 
+			// Merge author records where name matches mailmap.validate
+			var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib
+			{
+				Author = g.Key,
+				Project = directory,
+				Commits = g.SelectMany(a => a.Commits).ToList(),
+				Totals = new Totals
+				{
+					Commits = g.Sum(a => a.Totals.Commits),
+					Files = g.Sum(a => a.Totals.Files),
+					Lines = g.Sum(a => a.Totals.Lines)
+				}
+			});
+
+
+
 			Console.WriteLine("############## Authors ##############");
-			foreach (var file in filesChangedByAuthor)
+			foreach (var author in mergedAuthorContribs)
 			{
-				Console.WriteLine(file.Author + ": " + file.Files);
-			}
-			Console.WriteLine("#####################################\n");
-			foreach (var commit in commitsDoneByAuthor)
-			{
-				Console.WriteLine(commit.Author + ": " + commit.Commits);
-			}
-			foreach (var line in linesChanged)
-			{
-				Console.WriteLine(line.LinesAdded + line.LinesDeleted);
-			}
-			foreach (var author in reducedAuthors)
-			{
-				Console.WriteLine(author);
-			}
-			Console.WriteLine("############## Branches ##############");
-			foreach (var branch in branches)
-			{
-				Console.WriteLine(branch.FriendlyName);
+				Console.WriteLine(author.Author + ": \tFiles: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines);
 			}
 			Console.WriteLine("#####################################\n");
 			Console.WriteLine("############## Commits ##############");
-			foreach (var commit in commits)
+			foreach (var commit in uniqueCommits)
 			{
 				Console.WriteLine(commit.MessageShort);
 			}
