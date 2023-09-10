@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reactive.Linq;
+using ConsoleTables;
 using LibGit2Sharp;
 using ShellProgressBar;
 
@@ -126,10 +127,12 @@ public static class Work
 				}
 			}).OrderByDescending(a => a.Totals.Lines);
 
+			var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
 			foreach (var author in mergedAuthorContribs)
 			{
-				Console.WriteLine(author.Author.PadRight(50) + "\t[Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines + "]");
+				table.AddRow(author.Author, author.Totals.Files, author.Totals.Commits, author.Totals.Lines);
 			}
+			table.Write();
 
 		}
 	}
