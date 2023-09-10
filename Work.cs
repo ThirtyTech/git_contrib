@@ -1,6 +1,10 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Data.HashFunction;
 using LibGit2Sharp;
+using System.Data.HashFunction.xxHash;
 
 public static class Work
 {
@@ -26,7 +30,10 @@ public static class Work
 		".pdf"
 		];
 
-	public static void DoWork(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory)
+
+	public static readonly IxxHash _hasher = xxHashFactory.Instance.Create();
+
+	public static async Task DoWorkAsync(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory)
 	{
 
 		Console.WriteLine("Processing directory: " + directory);
@@ -55,18 +62,21 @@ public static class Work
 			};
 
 			// Filters out merged branch commits;	
+			var stopWatch = new Stopwatch();
+			stopWatch.Start();
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= fromDate).Where(c => c.Committer.When <= toDate);
-
-			var uniqueCommits = commits.Select(c => new
+			Process currentProcess = Process.GetCurrentProcess();
+			ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
+			var uniqueCommits = (await commits.ToObservable().Select(c => Observable.Return(new
 			{
-				UniqueHash = (c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content).GetHashCode(),
+				UniqueHash = _hasher.ComputeHash(c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content),
 				Commit = c
-			}).DistinctBy(c => c.UniqueHash).Select(c => c.Commit);
+			})).Merge(Math.Max(1, Environment.ProcessorCount - 1)).ToList().ObserveOn(TaskPoolScheduler.Default)).DistinctBy(c => c.UniqueHash).Select(c => c.Commit);
 
 			var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
 
 			// Loop through each group of commits by author
-			var authorContribs = uniqueCommitsGroupedByAuthor.Select(author => new AuthorContrib
+			var authorContribs = await uniqueCommitsGroupedByAuthor.ToObservable().Select(author => Observable.Start(() => new AuthorContrib
 			{
 				Author = author.Key,
 				Project = directory,
@@ -90,7 +100,8 @@ public static class Work
 					.SelectMany(p => p)
 					.Sum(p => p.LinesAdded + p.LinesDeleted)
 				}
-			});
+			})).Merge(Math.Max(1, Environment.ProcessorCount - 1)).ObserveOn(TaskPoolScheduler.Default).ToList();
+			Console.WriteLine(stopWatch.ToString() + "ms to group commits by author");
 
 			// Merge author records where name matches mailmap.validate
 			var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib

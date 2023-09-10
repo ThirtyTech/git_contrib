@@ -20,11 +20,11 @@ var root = new RootCommand {
 
 };
 
-root.SetHandler((folder, fromDate, toDate, mailmap) =>
+root.SetHandler(async (folder, fromDate, toDate, mailmap) =>
 {
 	var formattedFromDate = Utils.TryParseHumanReadableDateTimeOffset(fromDate, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue;
 	var formattedToDate = Utils.TryParseHumanReadableDateTimeOffset(toDate, out var _toDate) ? _toDate : DateTimeOffset.Now;
-	Work.DoWork(folder, formattedFromDate, formattedToDate, mailmap);
+	await Work.DoWorkAsync(folder, formattedFromDate, formattedToDate, mailmap);
 }, Folder, FromDate, ToDate, Mailmap);
 
 await root.InvokeAsync(args);
