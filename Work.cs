@@ -3,8 +3,6 @@ using LibGit2Sharp;
 
 public static class Work
 {
-	public static ConcurrentDictionary<string, bool> ProcessedCommits = new ConcurrentDictionary<string, bool>();
-	
 	// TODO: Make this externally configurable.
 	public static string[] ExcludeExtensions = [
 		".jpg",
