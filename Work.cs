@@ -67,11 +67,22 @@ public static class Work
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= fromDate).Where(c => c.Committer.When <= toDate);
 			Process currentProcess = Process.GetCurrentProcess();
 			ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
-			var uniqueCommits = commits.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount - 1).Select(c => new
+			var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount - 1).Select(c =>
 			{
-				UniqueHash = _hasher.ComputeHash(c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content),
-				Commit = c
-			}).ToList().DistinctBy(c => c.UniqueHash).Select(c => c.Commit);
+				var message = c.Message;
+				var authorDate = c.Author.When;
+				var hash = (message + authorDate).GetHashCode();
+
+				return new
+				{
+					// UniqueHash = _hasher.ComputeHash(c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content),
+					UniqueHash = hash,
+					Commit = c
+				};
+			}).ToList().DistinctBy(c => c.UniqueHash).ToList();
+
+			var uniqueCommits = uniqueCommitsEarly.Select(c => c.Commit);
+
 			Console.WriteLine(stopWatch.ToString() + "ms to filter commits");
 
 			var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
@@ -80,13 +91,12 @@ public static class Work
 			var authorContribs = uniqueCommitsGroupedByAuthor.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount - 1)
 			.Select(author =>
 			{
-				// Get tuple of Files and Lines from author.Select
 				var totals = author.Select(c =>
 				{
 					var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
-					var Files = patch.Select(p => p.Path).Distinct().Count();
-					var filtered = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
-					return (Files, filtered);
+					var Files = patch.Select(p => p.Path);
+					var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
+					return (Files, Lines);
 
 				});
 
@@ -98,8 +108,8 @@ public static class Work
 					Totals = new Totals
 					{
 						Commits = author.Count(),
-						Files = totals.Distinct().Count(),
-						Lines = totals.Select(p => p.filtered).Sum(p => p)
+						Files = totals.SelectMany(f => f.Files).Distinct().Count(),
+						Lines = totals.Select(p => p.Lines).Sum(p => p)
 					}
 				};
 			}).ToList();
@@ -123,6 +133,12 @@ public static class Work
 			foreach (var author in mergedAuthorContribs)
 			{
 				Console.WriteLine(author.Author.PadRight(50) + "\t[Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines.ToString("N0") + "]");
+				// var counter = 0;
+				// foreach (var commit in author.Commits)
+				// {
+				// 	Console.WriteLine("\t" + (counter++) + " " + commit.MessageShort);
+
+				// }
 			}
 			Console.WriteLine("#####################################\n");
 
