@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using LibGit2Sharp;
 
 public static class Work
@@ -32,6 +33,20 @@ public static class Work
 		// Making commit for the same of it here
 		using (var repo = new Repository(directory))
 		{
+			if (repo.Network.Remotes.Count() > 0)
+			{
+				Console.WriteLine("Fetching remote: " + repo.Network.Remotes.First().Name);
+				var psi = new ProcessStartInfo
+				{
+					FileName = "git",
+					Arguments = "fetch",
+					WorkingDirectory = directory,
+					UseShellExecute = false,
+				};
+
+				var process = Process.Start(psi);
+				process?.WaitForExit();
+			}
 			var mailmap = new Mailmap(mailmapDirectory ?? directory);
 			var filter = new CommitFilter
 			{
@@ -40,7 +55,8 @@ public static class Work
 			};
 
 			// Filters out merged branch commits;	
-			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate && c.Committer.When <= toDate).Where(c => c.Parents.Count() == 1);
+			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= fromDate).Where(c => c.Committer.When <= toDate);
+
 			var uniqueCommits = commits.Select(c => new
 			{
 				UniqueHash = (c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content).GetHashCode(),
