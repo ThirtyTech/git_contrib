@@ -24,7 +24,7 @@ root.SetHandler(async (folder, fromDate, toDate, mailmap) =>
 {
 	var formattedFromDate = Utils.TryParseHumanReadableDateTimeOffset(fromDate, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue;
 	var formattedToDate = Utils.TryParseHumanReadableDateTimeOffset(toDate, out var _toDate) ? _toDate : DateTimeOffset.Now;
-	await Work.DoWorkAsync(folder, formattedFromDate, formattedToDate, mailmap);
+	Work.DoWork(folder, formattedFromDate, formattedToDate, mailmap);
 }, Folder, FromDate, ToDate, Mailmap);
 
 await root.InvokeAsync(args);

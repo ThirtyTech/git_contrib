@@ -1,10 +1,6 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Data.HashFunction;
 using LibGit2Sharp;
-using System.Data.HashFunction.xxHash;
 using ShellProgressBar;
 
 public static class Work
@@ -32,10 +28,9 @@ public static class Work
 		];
 
 
-	public static readonly IxxHash _hasher = xxHashFactory.Instance.Create();
-	public static int MaxConcurrency = Environment.ProcessorCount - 1;
+	public static readonly int MaxConcurrency = Environment.ProcessorCount - 1;
 
-	public static async Task DoWorkAsync(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory)
+	public static void DoWork(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory)
 	{
 
 		Console.WriteLine("Processing directory: " + directory);
@@ -75,7 +70,6 @@ public static class Work
 
 				return new
 				{
-					// UniqueHash = _hasher.ComputeHash(c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content),
 					UniqueHash = hash,
 					Commit = c
 				};
@@ -99,13 +93,13 @@ public static class Work
 			.Select(author =>
 			{
 				var totals = author.Select(c =>
-				{
-					var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
-					var Files = patch.Select(p => p.Path);
-					var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
-					return (Files, Lines);
+		    {
+				    var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
+				    var Files = patch.Select(p => p.Path);
+				    var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
+				    return (Files, Lines);
 
-				}).ToList();
+			    }).ToList();
 				pbar.Tick();
 
 				return new AuthorContrib
@@ -140,7 +134,7 @@ public static class Work
 
 			foreach (var author in mergedAuthorContribs)
 			{
-				Console.WriteLine(author.Author.PadRight(50) + "\t[Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines.ToString("N0") + "]");
+				Console.WriteLine(author.Author.PadRight(50) + "\t[Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines + "]");
 				// var counter = 0;
 				// foreach (var commit in author.Commits)
 				// {
