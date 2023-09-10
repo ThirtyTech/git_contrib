@@ -100,7 +100,10 @@ public class Mailmap : IDictionary<string, string>
 
 	public bool TryGetValue(string key, out string value)
 	{
-		return _mailmap.TryGetValue(key, out value);
+		string? result;
+		var found = _mailmap.TryGetValue(key, out result);
+		value = result ?? string.Empty;
+		return found;
 	}
 
 	IEnumerator IEnumerable.GetEnumerator()
