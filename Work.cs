@@ -4,6 +4,26 @@ using LibGit2Sharp;
 public static class Work
 {
 	public static ConcurrentDictionary<string, bool> ProcessedCommits = new ConcurrentDictionary<string, bool>();
+	public static string[] ExcludeExtensions = [
+		".jpg",
+		".jpeg",
+		".png",
+		".gif",
+		".bmp",
+		".tiff",
+		".tif",
+		".ico",
+		".jfif",
+		".webp",
+		".svg",
+		".heif",
+		".heic",
+		".raw",
+		".indd",
+		".ai",
+		".eps",
+		".pdf"
+		];
 	public static void DoWork(string directory, DateTimeOffset fromDate, string? mailmapDirectory)
 	{
 
@@ -37,8 +57,21 @@ public static class Work
 				Totals = new Totals
 				{
 					Commits = author.Count(),
-					Files = author.SelectMany(c => c.Tree.Select(t => t.Path)).Distinct().Count(),
-					Lines = author.Select(c => repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree)).Sum(p => p.LinesAdded + p.LinesDeleted)
+					Files = author.Select(c =>
+					{
+
+						var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
+						return patch.Select(p => p.Path).Distinct().Count();
+					}
+					).Distinct().Count(),
+					Lines = author.Select(c =>
+					{
+						var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
+						var filtered = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e)));
+						return filtered;
+					})
+					.SelectMany(p => p)
+					.Sum(p => p.LinesAdded + p.LinesDeleted)
 				}
 			});
 
