@@ -9,9 +9,14 @@ public static class Work
 
 		Console.WriteLine("Processing directory: " + directory);
 		// Making commit for the same of it here
-		var mailmap = new Mailmap(directory);
 		using (var repo = new Repository(directory))
 		{
+			var mailmap = new Mailmap(directory);
+			// Console.Write all entries in mailmap
+			foreach (var entry in mailmap)
+			{
+				Console.WriteLine(entry.Key + " -> " + entry.Value);
+			}
 			var branches = repo.Branches;
 			var filter = new CommitFilter
 			{
@@ -55,23 +60,23 @@ public static class Work
 					Files = g.Sum(a => a.Totals.Files),
 					Lines = g.Sum(a => a.Totals.Lines)
 				}
-			});
+			}).OrderByDescending(a => a.Totals.Lines);
 
-
-
-			Console.WriteLine("############## Authors ##############");
-			foreach (var author in mergedAuthorContribs)
-			{
-				Console.WriteLine(author.Author + " [Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines + "]");
-			}
-			Console.WriteLine("#####################################\n");
 
 			Console.WriteLine("############## Commits ##############");
 			foreach (var commit in uniqueCommits)
 			{
-				Console.WriteLine(commit.MessageShort);
+				// Console.WriteLine(commit.MessageShort);
 			}
 			Console.WriteLine("#####################################\n");
+
+			Console.WriteLine("############## Authors ##############");
+			foreach (var author in mergedAuthorContribs)
+			{
+				Console.WriteLine(author.Author.PadRight(50) + "\t[Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines.ToString("N0") + "]");
+			}
+			Console.WriteLine("#####################################\n");
+
 		}
 	}
 
