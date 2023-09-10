@@ -4,14 +4,14 @@ using LibGit2Sharp;
 public static class Work
 {
 	public static ConcurrentDictionary<string, bool> ProcessedCommits = new ConcurrentDictionary<string, bool>();
-	public static void DoWork(string directory, DateTimeOffset fromDate)
+	public static void DoWork(string directory, DateTimeOffset fromDate, string? mailmapDirectory)
 	{
 
 		Console.WriteLine("Processing directory: " + directory);
 		// Making commit for the same of it here
 		using (var repo = new Repository(directory))
 		{
-			var mailmap = new Mailmap(directory);
+			var mailmap = new Mailmap(mailmapDirectory ?? directory);
 			var filter = new CommitFilter
 			{
 				IncludeReachableFrom = repo.Refs,
