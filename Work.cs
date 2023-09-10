@@ -4,6 +4,8 @@ using LibGit2Sharp;
 public static class Work
 {
 	public static ConcurrentDictionary<string, bool> ProcessedCommits = new ConcurrentDictionary<string, bool>();
+	
+	// TODO: Make this externally configurable.
 	public static string[] ExcludeExtensions = [
 		".jpg",
 		".jpeg",
@@ -24,6 +26,7 @@ public static class Work
 		".eps",
 		".pdf"
 		];
+
 	public static void DoWork(string directory, DateTimeOffset fromDate, string? mailmapDirectory)
 	{
 
@@ -88,14 +91,6 @@ public static class Work
 					Lines = g.Sum(a => a.Totals.Lines)
 				}
 			}).OrderByDescending(a => a.Totals.Lines);
-
-
-			Console.WriteLine("############## Commits ##############");
-			foreach (var commit in uniqueCommits)
-			{
-				// Console.WriteLine(commit.MessageShort);
-			}
-			Console.WriteLine("#####################################\n");
 
 			Console.WriteLine("############## Authors ##############");
 			foreach (var author in mergedAuthorContribs)

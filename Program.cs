@@ -17,7 +17,6 @@ var root = new RootCommand {
 	Mailmap
 
 };
-//One line change for testing
 
 root.SetHandler((folder, fromDate, mailmap) =>
 {
