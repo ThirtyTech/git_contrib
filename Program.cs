@@ -2,6 +2,7 @@
 using System.Diagnostics;
 
 var FromDate = new Option<string>("--fromDate", description: "Starting date for commits to be considered");
+var ToDate = new Option<string>("--toDate", description: "Ending date for commits to be considered");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 var Folder = new Option<string>("--folder", description: "Folder to search for git repositories", getDefaultValue: () =>
 {
@@ -13,23 +14,18 @@ var Folder = new Option<string>("--folder", description: "Folder to search for g
 
 var root = new RootCommand {
 	FromDate,
+	ToDate,
 	Folder,
 	Mailmap
 
 };
 
-root.SetHandler((folder, fromDate, mailmap) =>
+root.SetHandler((folder, fromDate, toDate, mailmap) =>
 {
-	if (Utils.TryParseHumanReadableDateTimeOffset(fromDate, out var date))
-	{
-		Work.DoWork(folder, date, mailmap);
-	}
-	else
-	{
-
-		Work.DoWork(folder, DateTime.MinValue, mailmap);
-	}
-}, Folder, FromDate, Mailmap);
+	var formattedFromDate = Utils.TryParseHumanReadableDateTimeOffset(fromDate, out var _fromDate) ? _fromDate : DateTime.MinValue;
+	var formattedToDate = Utils.TryParseHumanReadableDateTimeOffset(fromDate, out var _toDate) ? _toDate : DateTime.MaxValue;
+	Work.DoWork(folder, formattedToDate, formattedToDate, mailmap);
+}, Folder, FromDate, ToDate, Mailmap);
 
 await root.InvokeAsync(args);
 Console.WriteLine("Done");

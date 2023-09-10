@@ -25,7 +25,7 @@ public static class Work
 		".pdf"
 		];
 
-	public static void DoWork(string directory, DateTimeOffset fromDate, string? mailmapDirectory)
+	public static void DoWork(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory)
 	{
 
 		Console.WriteLine("Processing directory: " + directory);
@@ -40,7 +40,7 @@ public static class Work
 			};
 
 			// Filters out merged branch commits;	
-			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate).Where(c => c.Parents.Count() == 1);
+			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate && c.Committer.When <= toDate).Where(c => c.Parents.Count() == 1);
 			var uniqueCommits = commits.Select(c => new
 			{
 				UniqueHash = (c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content).GetHashCode(),
