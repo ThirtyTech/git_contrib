@@ -18,13 +18,9 @@ public static class Work
 				IncludeReachableFrom = repo.Refs,
 				SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
 			};
-			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate)
-			// Filters out merged branch commits;	
-			.Where(c => c.Parents.Count() == 1);
-			var commitsByAuthor = commits.GroupBy(c => c.Author.Name);
-			var authors = commits.Select(c => c.Author.ToString()).Distinct();
-			var reducedAuthors = authors.Select(a => mailmap.Validate(a)).Distinct();
 
+			// Filters out merged branch commits;	
+			var commits = repo.Commits.QueryBy(filter).Where(c => c.Committer.When >= fromDate).Where(c => c.Parents.Count() == 1);
 			var uniqueCommits = commits.Select(c => new
 			{
 				UniqueHash = (c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content).GetHashCode(),
@@ -69,6 +65,7 @@ public static class Work
 				Console.WriteLine(author.Author + " [Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines + "]");
 			}
 			Console.WriteLine("#####################################\n");
+
 			Console.WriteLine("############## Commits ##############");
 			foreach (var commit in uniqueCommits)
 			{
