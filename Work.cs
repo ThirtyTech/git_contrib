@@ -59,8 +59,6 @@ public static class Work
 			};
 
 			// Filters out merged branch commits;	
-			var stopWatch = new Stopwatch();
-			stopWatch.Start();
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= fromDate).Where(c => c.Committer.When <= toDate);
 			var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(MaxConcurrency).Select(c =>
 			{
@@ -76,12 +74,7 @@ public static class Work
 			}).ToList().DistinctBy(c => c.UniqueHash).ToList();
 
 			var uniqueCommits = uniqueCommitsEarly.Select(c => c.Commit);
-
-			// Console.WriteLine(stopWatch.ToString() + "ms to filter commits");
-
 			var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
-
-			// Loop through each group of commits by author
 			var pbar = new ProgressBar(uniqueCommitsGroupedByAuthor.Count(), "Processing commits by author", new ProgressBarOptions
 			{
 				ForegroundColor = ConsoleColor.Yellow,
@@ -89,6 +82,8 @@ public static class Work
 				ProgressCharacter = '─',
 				ProgressBarOnBottom = true
 			});
+
+			// Loop through each group of commits by author
 			var authorContribs = uniqueCommitsGroupedByAuthor.AsParallel().WithDegreeOfParallelism(MaxConcurrency)
 			.Select(author =>
 			{
@@ -116,7 +111,6 @@ public static class Work
 				};
 			}).ToList();
 			pbar.Dispose();
-			// Console.WriteLine(stopWatch.ToString() + "ms to group commits by author");
 
 			// Merge author records where name matches mailmap.validate
 			var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib
@@ -135,12 +129,6 @@ public static class Work
 			foreach (var author in mergedAuthorContribs)
 			{
 				Console.WriteLine(author.Author.PadRight(50) + "\t[Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines + "]");
-				// var counter = 0;
-				// foreach (var commit in author.Commits)
-				// {
-				// 	Console.WriteLine("\t" + (counter++) + " " + commit.MessageShort);
-
-				// }
 			}
 
 		}
