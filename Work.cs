@@ -88,13 +88,13 @@ public static class Work
 			.Select(author =>
 			{
 				var totals = author.Select(c =>
-		    {
-				    var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
-				    var Files = patch.Select(p => p.Path);
-				    var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
-				    return (Files, Lines);
+				{
+					var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
+					var Files = patch.Select(p => p.Path);
+					var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
+					return (Files, Lines);
 
-			    }).ToList();
+				}).ToList();
 				pbar.Tick();
 
 				return new AuthorContrib
