@@ -22,7 +22,7 @@ public class Mailmap : IDictionary<string, string>
 			// TODO: Implement the other variations of mailmap. See https://git-scm.com/docs/gitmailmap
 			if (parts.Length == 2)
 			{
-				_mailmap[parts[1]] = parts[0] + '>';
+				_mailmap[parts[1].Trim()] = parts[0] + '>';
 			}
 		}
 	}

@@ -138,7 +138,6 @@ public static class Work
 				}
 			}).OrderByDescending(a => a.Totals.Lines);
 
-			Console.WriteLine("############## Authors ##############");
 			foreach (var author in mergedAuthorContribs)
 			{
 				Console.WriteLine(author.Author.PadRight(50) + "\t[Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines.ToString("N0") + "]");
@@ -149,7 +148,6 @@ public static class Work
 
 				// }
 			}
-			Console.WriteLine("#####################################\n");
 
 		}
 	}

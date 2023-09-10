@@ -28,6 +28,4 @@ root.SetHandler(async (folder, fromDate, toDate, mailmap) =>
 }, Folder, FromDate, ToDate, Mailmap);
 
 await root.InvokeAsync(args);
-Console.WriteLine("Done");
-return;
 
