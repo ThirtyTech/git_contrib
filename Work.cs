@@ -5,6 +5,7 @@ using System.Reactive.Linq;
 using System.Data.HashFunction;
 using LibGit2Sharp;
 using System.Data.HashFunction.xxHash;
+using ShellProgressBar;
 
 public static class Work
 {
@@ -32,6 +33,7 @@ public static class Work
 
 
 	public static readonly IxxHash _hasher = xxHashFactory.Instance.Create();
+	public static int MaxConcurrency = Environment.ProcessorCount - 1;
 
 	public static async Task DoWorkAsync(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory)
 	{
@@ -65,9 +67,7 @@ public static class Work
 			var stopWatch = new Stopwatch();
 			stopWatch.Start();
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= fromDate).Where(c => c.Committer.When <= toDate);
-			Process currentProcess = Process.GetCurrentProcess();
-			ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
-			var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount - 1).Select(c =>
+			var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(MaxConcurrency).Select(c =>
 			{
 				var message = c.Message;
 				var authorDate = c.Author.When;
@@ -83,12 +83,19 @@ public static class Work
 
 			var uniqueCommits = uniqueCommitsEarly.Select(c => c.Commit);
 
-			Console.WriteLine(stopWatch.ToString() + "ms to filter commits");
+			// Console.WriteLine(stopWatch.ToString() + "ms to filter commits");
 
 			var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
 
 			// Loop through each group of commits by author
-			var authorContribs = uniqueCommitsGroupedByAuthor.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount - 1)
+			var pbar = new ProgressBar(uniqueCommitsGroupedByAuthor.Count(), "Processing commits by author", new ProgressBarOptions
+			{
+				ForegroundColor = ConsoleColor.Yellow,
+				ForegroundColorDone = ConsoleColor.DarkGreen,
+				ProgressCharacter = '─',
+				ProgressBarOnBottom = true
+			});
+			var authorContribs = uniqueCommitsGroupedByAuthor.AsParallel().WithDegreeOfParallelism(MaxConcurrency)
 			.Select(author =>
 			{
 				var totals = author.Select(c =>
@@ -98,7 +105,8 @@ public static class Work
 					var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
 					return (Files, Lines);
 
-				});
+				}).ToList();
+				pbar.Tick();
 
 				return new AuthorContrib
 				{
@@ -113,7 +121,8 @@ public static class Work
 					}
 				};
 			}).ToList();
-			Console.WriteLine(stopWatch.ToString() + "ms to group commits by author");
+			pbar.Dispose();
+			// Console.WriteLine(stopWatch.ToString() + "ms to group commits by author");
 
 			// Merge author records where name matches mailmap.validate
 			var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib
