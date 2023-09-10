@@ -67,40 +67,42 @@ public static class Work
 			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= fromDate).Where(c => c.Committer.When <= toDate);
 			Process currentProcess = Process.GetCurrentProcess();
 			ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
-			var uniqueCommits = (await commits.ToObservable().Select(c => Observable.Return(new
+			var uniqueCommits = commits.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount - 1).Select(c => new
 			{
 				UniqueHash = _hasher.ComputeHash(c.Message + repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree).Content),
 				Commit = c
-			})).Merge(Math.Max(1, Environment.ProcessorCount - 1)).ToList().ObserveOn(TaskPoolScheduler.Default)).DistinctBy(c => c.UniqueHash).Select(c => c.Commit);
+			}).ToList().DistinctBy(c => c.UniqueHash).Select(c => c.Commit);
+			Console.WriteLine(stopWatch.ToString() + "ms to filter commits");
 
 			var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
 
 			// Loop through each group of commits by author
-			var authorContribs = await uniqueCommitsGroupedByAuthor.ToObservable().Select(author => Observable.Start(() => new AuthorContrib
+			var authorContribs = uniqueCommitsGroupedByAuthor.AsParallel().WithDegreeOfParallelism(Environment.ProcessorCount - 1)
+			.Select(author =>
 			{
-				Author = author.Key,
-				Project = directory,
-				Commits = author.ToList(),
-				Totals = new Totals
+				// Get tuple of Files and Lines from author.Select
+				var totals = author.Select(c =>
 				{
-					Commits = author.Count(),
-					Files = author.Select(c =>
-					{
+					var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
+					var Files = patch.Select(p => p.Path).Distinct().Count();
+					var filtered = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
+					return (Files, filtered);
 
-						var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
-						return patch.Select(p => p.Path).Distinct().Count();
-					}
-					).Distinct().Count(),
-					Lines = author.Select(c =>
+				});
+
+				return new AuthorContrib
+				{
+					Author = author.Key,
+					Project = directory,
+					Commits = author.ToList(),
+					Totals = new Totals
 					{
-						var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
-						var filtered = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e)));
-						return filtered;
-					})
-					.SelectMany(p => p)
-					.Sum(p => p.LinesAdded + p.LinesDeleted)
-				}
-			})).Merge(Math.Max(1, Environment.ProcessorCount - 1)).ObserveOn(TaskPoolScheduler.Default).ToList();
+						Commits = author.Count(),
+						Files = totals.Distinct().Count(),
+						Lines = totals.Select(p => p.filtered).Sum(p => p)
+					}
+				};
+			}).ToList();
 			Console.WriteLine(stopWatch.ToString() + "ms to group commits by author");
 
 			// Merge author records where name matches mailmap.validate
