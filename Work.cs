@@ -66,7 +66,7 @@ public static class Work
 			Console.WriteLine("############## Authors ##############");
 			foreach (var author in mergedAuthorContribs)
 			{
-				Console.WriteLine(author.Author + ": \tFiles: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines);
+				Console.WriteLine(author.Author + " [Files: " + author.Totals.Files + "\tCommits: " + author.Totals.Commits + "\tLines:" + author.Totals.Lines + "]");
 			}
 			Console.WriteLine("#####################################\n");
 			Console.WriteLine("############## Commits ##############");
