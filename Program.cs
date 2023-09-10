@@ -19,7 +19,7 @@ var root = new RootCommand {
 };
 //One line change for testing
 
-root.SetHandler(async (folder, fromDate, mailmap) =>
+root.SetHandler((folder, fromDate, mailmap) =>
 {
 	if (Utils.TryParseHumanReadableDateTimeOffset(fromDate, out var date))
 	{
