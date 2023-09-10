@@ -1,5 +1,4 @@
 using System.Collections;
-using LibGit2Sharp;
 
 public class Mailmap : IDictionary<string, string>
 {
@@ -7,6 +6,10 @@ public class Mailmap : IDictionary<string, string>
 
 	public Mailmap(string path)
 	{
+		if (!File.Exists(Path.Combine(path, ".mailmap")))
+		{
+			return;
+		}
 		foreach (var line in File.ReadLines(Path.Combine(path, ".mailmap")))
 		{
 			// Ignore comments and empty lines
@@ -19,17 +22,20 @@ public class Mailmap : IDictionary<string, string>
 			// TODO: Implement the other variations of mailmap. See https://git-scm.com/docs/gitmailmap
 			if (parts.Length == 2)
 			{
-				_mailmap[parts[1] + '>'] = parts[0] + '>';
+				_mailmap[parts[1]] = parts[0] + '>';
 			}
 		}
 	}
 
 	public string Validate(string author)
 	{
-		if (_mailmap.TryGetValue(author.ToString(), out var correctAuthor))
-			return correctAuthor;
+		var result = author;
+		while (_mailmap.TryGetValue(result, out var correctAuthor))
+		{
+			result = correctAuthor;
+		}
 
-		return author.ToString();
+		return result;
 	}
 
 	public string this[string key]
