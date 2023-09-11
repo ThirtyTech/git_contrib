@@ -144,10 +144,6 @@ public static class Work
 			{
 				Console.WriteLine(JsonSerializer.Serialize(mergedAuthorContribs));
 			}
-			else
-			{
-				Console.WriteLine("Invalid format: " + format);
-			}
 
 		}
 	}
