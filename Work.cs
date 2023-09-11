@@ -36,9 +36,9 @@ public static class Work
 	public static void DoWork(Options options)
 	{
 
-		Console.WriteLine("Processing directory: " + options.Folder);
+		Console.WriteLine("Processing directory: " + options.Path);
 		// Making commit for the same of it here
-		using (var repo = new Repository(options.Folder))
+		using (var repo = new Repository(options.Path))
 		{
 			if (repo.Network.Remotes.Count() > 0)
 			{
@@ -47,14 +47,14 @@ public static class Work
 				{
 					FileName = "git",
 					Arguments = "fetch",
-					WorkingDirectory = options.Folder,
+					WorkingDirectory = options.Path,
 					UseShellExecute = false,
 				};
 
 				var process = Process.Start(psi);
 				process?.WaitForExit();
 			}
-			var mailmap = new Mailmap(!string.IsNullOrWhiteSpace(options.Mailmap) ? options.Mailmap : options.Folder);
+			var mailmap = new Mailmap(!string.IsNullOrWhiteSpace(options.Mailmap) ? options.Mailmap : options.Path);
 			var filter = new CommitFilter
 			{
 				IncludeReachableFrom = repo.Refs,
@@ -108,7 +108,7 @@ public static class Work
 				return new AuthorContrib
 				{
 					Author = author.Key,
-					Project = options.Folder,
+					Project = options.Path,
 					Commits = author.ToList(),
 					Totals = new Totals
 					{
@@ -124,7 +124,7 @@ public static class Work
 			var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib
 			{
 				Author = g.Key,
-				Project = options.Folder,
+				Project = options.Path,
 				Commits = g.SelectMany(a => a.Commits).ToList(),
 				Totals = new Totals
 				{
