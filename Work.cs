@@ -54,7 +54,7 @@ public static class Work
 				var process = Process.Start(psi);
 				process?.WaitForExit();
 			}
-			var mailmap = new Mailmap(options.Mailmap ?? options.Folder);
+			var mailmap = new Mailmap(!string.IsNullOrWhiteSpace(options.Mailmap) ? options.Mailmap : options.Folder);
 			var filter = new CommitFilter
 			{
 				IncludeReachableFrom = repo.Refs,
@@ -62,7 +62,11 @@ public static class Work
 			};
 
 			// Filters out merged branch commits;	
-			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= options.FromDate).Where(c => c.Committer.When <= options.ToDate);
+			var commits = repo.Commits.QueryBy(filter)
+			.Where(c => c.Parents.Count() == 1)
+			.Where(c => c.Committer.When >= options.FromDate)
+			.Where(c => c.Committer.When <= options.ToDate);
+
 			var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(MaxConcurrency).Select(c =>
 			{
 				var message = c.Message;
@@ -98,6 +102,7 @@ public static class Work
 					return (Files, Lines);
 
 				}).ToList();
+
 				pbar.Tick();
 
 				return new AuthorContrib
@@ -129,7 +134,7 @@ public static class Work
 				}
 			}).OrderByDescending(a => a.Totals.Lines);
 
-			if (options.Format == global::Format.Table)
+			if (options.Format == Format.Table)
 			{
 
 				var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
@@ -140,7 +145,7 @@ public static class Work
 				}
 				table.Write();
 			}
-			else if (options.Format == global::Format.Json)
+			else if (options.Format == Format.Json)
 			{
 				Console.WriteLine(JsonSerializer.Serialize(mergedAuthorContribs));
 			}

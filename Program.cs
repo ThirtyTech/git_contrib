@@ -8,13 +8,7 @@ class Program
 {
 	static async Task<int> Main(string[] args)
 	{
-		var Folder = new Argument<string>("--folder", description: "Folder to search for git repositories", getDefaultValue: () =>
-		{
-			// var directory = !Debugger.IsAttached
-			// 	? Directory.GetCurrentDirectory()
-			// 	: Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-			return Directory.GetCurrentDirectory();
-		});
+		var Folder = new Argument<string>("--folder", description: "Folder to search for git repositories", getDefaultValue: Directory.GetCurrentDirectory);
 		var FromDate = new Option<DateTimeOffset>("--fromDate", description: "Starting date for commits to be considered",
 		parseArgument: (result) =>
 		{
