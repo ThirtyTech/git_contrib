@@ -17,6 +17,7 @@
     <PackageReference Include="ConsoleTables" Version="2.5.0" />
     <PackageReference Include="libgit2sharp" Version="0.27.2" />
     <PackageReference Include="Libgit2sharp.nativebinaries" Version="2.0.320" />
+    <PackageReference Include="Mapster" Version="7.3.0" />
     <PackageReference Include="ShellProgressBar" Version="5.2.0" />
     <PackageReference Include="System.Commandline" Version="2.0.0-beta4.22272.1" />
     <PackageReference Include="System.CommandLine.DragonFruit" Version="0.4.0-alpha.22272.1" />
@@ -25,8 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FluentValidationExcludedCultures
-      Include="de;es;fr;it;ja;ko;ru;tr;cl;cs;pl;pt-BR;zh-Hans;zh-Hant;Properties">
+    <FluentValidationExcludedCultures Include="de;es;fr;it;ja;ko;ru;tr;cl;cs;pl;pt-BR;zh-Hans;zh-Hant;Properties">
       <InProject>false</InProject>
     </FluentValidationExcludedCultures>
   </ItemGroup>

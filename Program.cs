@@ -25,6 +25,12 @@ class Program
 		});
 		var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 		var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
+		var Config = new Option<ConfigOptions>("--config", description: "Path to config file", parseArgument: (result) =>
+		{
+			var input = result.Tokens.Single().Value;
+			return new ConfigOptions(input);
+
+		});
 
 		var root = new RootCommand {
 			FromDate,
