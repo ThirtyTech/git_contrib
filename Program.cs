@@ -36,8 +36,7 @@ class Program
 		var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config file", parse: (result) =>
 		{
 			var input = result.Tokens.Single().Value;
-			var test = new ConfigOptions(input);
-			return test;
+			return new ConfigOptions(input);
 		});
 		var config = new Command("config", "Configure defaults for the tool")
 		{
