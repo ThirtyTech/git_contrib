@@ -15,16 +15,18 @@ class Program
 			// 	: Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
 			return Directory.GetCurrentDirectory();
 		});
-		var FromDate = new Option<DateTimeOffset>("--fromDate", description: "Starting date for commits to be considered", parseArgument: (result) =>
+		var FromDate = new Option<DateTimeOffset>("--fromDate", description: "Starting date for commits to be considered",
+		parseArgument: (result) =>
 		{
 			var input = result.Tokens.Single().Value;
-			return Utils.TryParseHumanReadableDateTimeOffset(input, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue;
+			return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.MinValue;
 
 		});
-		var ToDate = new Option<DateTimeOffset>("--toDate", description: "Ending date for commits to be considered", parseArgument: (result) =>
+		var ToDate = new Option<DateTimeOffset>("--toDate", description: "Ending date for commits to be considered",
+		parseArgument: (result) =>
 		{
 			var input = result.Tokens.Single().Value;
-			return Utils.TryParseHumanReadableDateTimeOffset(input, out var _toDate) ? _toDate : DateTimeOffset.MinValue;
+			return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.Now;
 
 		});
 		var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
