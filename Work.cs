@@ -136,7 +136,7 @@ public static class Work
 				table.Options.EnableCount = false;
 				foreach (var author in mergedAuthorContribs)
 				{
-					table.AddRow(author.Author, author.Totals.Files, author.Totals.Commits, author.Totals.Lines);
+					table.AddRow(author.Author, author.Totals.Files.ToString("N0"), author.Totals.Commits.ToString("N0"), author.Totals.Lines.ToString("N0"));
 				}
 				table.Write();
 			}
