@@ -1,38 +1,45 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.NamingConventionBinder;
+using System.CommandLine.Parsing;
 using System.Diagnostics;
 
-var FromDate = new Option<string>("--fromDate", description: "Starting date for commits to be considered");
-var ToDate = new Option<string>("--toDate", description: "Ending date for commits to be considered");
-var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
-var allowedFormats = new[] { "json", "table" };
-var Format = new Option<string>("--format", description: "Format to output results in", getDefaultValue: () => "table");
-var Folder = new Option<string>("--folder", description: "Folder to search for git repositories", getDefaultValue: () =>
+class Program
 {
-	var directory = !Debugger.IsAttached
-		? Directory.GetCurrentDirectory()
-		: Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-	return directory ?? "";
-});
-
-var root = new RootCommand {
-	FromDate,
-	ToDate,
-	Folder,
-	Mailmap,
-	Format
-
-};
-
-root.SetHandler((folder, fromDate, toDate, mailmap, format) =>
-{
-	if (!allowedFormats.Contains(format))
+	static async Task<int> Main(string[] args)
 	{
-		throw new ArgumentException($"Format must be one of {string.Join(", ", allowedFormats)}");
+		var Folder = new Argument<string>("--folder", description: "Folder to search for git repositories", getDefaultValue: () =>
+		{
+			// var directory = !Debugger.IsAttached
+			// 	? Directory.GetCurrentDirectory()
+			// 	: Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
+			return Directory.GetCurrentDirectory();
+		});
+		var FromDate = new Option<DateTimeOffset>("--fromDate", description: "Starting date for commits to be considered", parseArgument: (result) =>
+		{
+			var input = result.Tokens.Single().Value;
+			return Utils.TryParseHumanReadableDateTimeOffset(input, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue;
+
+		});
+		var ToDate = new Option<DateTimeOffset>("--toDate", description: "Ending date for commits to be considered", parseArgument: (result) =>
+		{
+			var input = result.Tokens.Single().Value;
+			return Utils.TryParseHumanReadableDateTimeOffset(input, out var _toDate) ? _toDate : DateTimeOffset.MinValue;
+
+		});
+		var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
+		var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
+
+		var root = new RootCommand {
+			FromDate,
+			ToDate,
+			Folder,
+			Mailmap,
+			Format
+		};
+
+		root.Handler = CommandHandler.Create<Options>(Work.DoWork);
+
+		return await root.InvokeAsync(args);
 	}
-	var formattedFromDate = Utils.TryParseHumanReadableDateTimeOffset(fromDate, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue;
-	var formattedToDate = Utils.TryParseHumanReadableDateTimeOffset(toDate, out var _toDate) ? _toDate : DateTimeOffset.Now;
-	Work.DoWork(folder, formattedFromDate, formattedToDate, mailmap, format);
-}, Folder, FromDate, ToDate, Mailmap, Format);
-
-await root.InvokeAsync(args);
-
+}

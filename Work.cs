@@ -33,12 +33,12 @@ public static class Work
 
 	public static readonly int MaxConcurrency = Environment.ProcessorCount - 1;
 
-	public static void DoWork(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory, string format)
+	public static void DoWork(Options options)
 	{
 
-		Console.WriteLine("Processing directory: " + directory);
+		Console.WriteLine("Processing directory: " + options.Folder);
 		// Making commit for the same of it here
-		using (var repo = new Repository(directory))
+		using (var repo = new Repository(options.Folder))
 		{
 			if (repo.Network.Remotes.Count() > 0)
 			{
@@ -47,14 +47,14 @@ public static class Work
 				{
 					FileName = "git",
 					Arguments = "fetch",
-					WorkingDirectory = directory,
+					WorkingDirectory = options.Folder,
 					UseShellExecute = false,
 				};
 
 				var process = Process.Start(psi);
 				process?.WaitForExit();
 			}
-			var mailmap = new Mailmap(mailmapDirectory ?? directory);
+			var mailmap = new Mailmap(options.Mailmap ?? options.Folder);
 			var filter = new CommitFilter
 			{
 				IncludeReachableFrom = repo.Refs,
@@ -62,7 +62,7 @@ public static class Work
 			};
 
 			// Filters out merged branch commits;	
-			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= fromDate).Where(c => c.Committer.When <= toDate);
+			var commits = repo.Commits.QueryBy(filter).Where(c => c.Parents.Count() == 1).Where(c => c.Committer.When >= options.FromDate).Where(c => c.Committer.When <= options.ToDate);
 			var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(MaxConcurrency).Select(c =>
 			{
 				var message = c.Message;
@@ -103,7 +103,7 @@ public static class Work
 				return new AuthorContrib
 				{
 					Author = author.Key,
-					Project = directory,
+					Project = options.Folder,
 					Commits = author.ToList(),
 					Totals = new Totals
 					{
@@ -119,7 +119,7 @@ public static class Work
 			var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib
 			{
 				Author = g.Key,
-				Project = directory,
+				Project = options.Folder,
 				Commits = g.SelectMany(a => a.Commits).ToList(),
 				Totals = new Totals
 				{
@@ -129,7 +129,7 @@ public static class Work
 				}
 			}).OrderByDescending(a => a.Totals.Lines);
 
-			if (format == "table")
+			if (options.Format == global::Format.Table)
 			{
 
 				var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
@@ -140,7 +140,7 @@ public static class Work
 				}
 				table.Write();
 			}
-			else if (format == "json")
+			else if (options.Format == global::Format.Json)
 			{
 				Console.WriteLine(JsonSerializer.Serialize(mergedAuthorContribs));
 			}
