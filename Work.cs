@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Reactive.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ConsoleTables;
 using LibGit2Sharp;
 using ShellProgressBar;
@@ -31,7 +33,7 @@ public static class Work
 
 	public static readonly int MaxConcurrency = Environment.ProcessorCount - 1;
 
-	public static void DoWork(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory)
+	public static void DoWork(string directory, DateTimeOffset fromDate, DateTimeOffset toDate, string? mailmapDirectory, string format)
 	{
 
 		Console.WriteLine("Processing directory: " + directory);
@@ -127,13 +129,25 @@ public static class Work
 				}
 			}).OrderByDescending(a => a.Totals.Lines);
 
-			var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
-			table.Options.EnableCount = false;
-			foreach (var author in mergedAuthorContribs)
+			if (format == "table")
 			{
-				table.AddRow(author.Author, author.Totals.Files, author.Totals.Commits, author.Totals.Lines);
+
+				var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
+				table.Options.EnableCount = false;
+				foreach (var author in mergedAuthorContribs)
+				{
+					table.AddRow(author.Author, author.Totals.Files, author.Totals.Commits, author.Totals.Lines);
+				}
+				table.Write();
 			}
-			table.Write();
+			else if (format == "json")
+			{
+				Console.WriteLine(JsonSerializer.Serialize(mergedAuthorContribs));
+			}
+			else
+			{
+				Console.WriteLine("Invalid format: " + format);
+			}
 
 		}
 	}

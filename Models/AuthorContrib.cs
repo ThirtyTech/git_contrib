@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using LibGit2Sharp;
 
 public class AuthorContrib
@@ -7,6 +8,7 @@ public class AuthorContrib
 	public string Project { get; set; } = "";
 	// TODO: Break down files by further details. Extensions, etc
 	public Totals Totals { get; set; } = new();
+	[JsonIgnore]
 	public List<Commit> Commits { get; set; } = new();
 }
 
