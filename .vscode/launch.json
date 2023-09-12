@@ -10,7 +10,7 @@
 			"request": "launch",
 			"preLaunchTask": "build",
 			"program": "${workspaceFolder}/bin/Debug/net8.0/git-contrib.dll",
-			"args": ["--fromDate", "2 weeks"],
+			"args": ["--from", "2 weeks"],
 			"cwd": "${workspaceFolder}",
 			"console": "internalConsole",
 			"stopAtEntry": false

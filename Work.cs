@@ -143,6 +143,10 @@ public static class Work
 				{
 					table.AddRow(author.Author, author.Totals.Files.ToString("N0"), author.Totals.Commits.ToString("N0"), author.Totals.Lines.ToString("N0"));
 				}
+				if (options.ShowSummary)
+				{
+					table.AddRow("Project Totals", mergedAuthorContribs.Sum(a => a.Totals.Files).ToString("N0"), mergedAuthorContribs.Sum(a => a.Totals.Commits).ToString("N0"), mergedAuthorContribs.Sum(a => a.Totals.Lines).ToString("N0"));
+				}
 				table.Write();
 			}
 			else if (options.Format == Format.Json)

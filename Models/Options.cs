@@ -4,19 +4,24 @@ using Mapster;
 public class Options
 {
     public Options() { }
-    public Options(ConfigOptions options)
+    public static Options Convert(ConfigOptions options)
     {
-        // TODO: Conver this to Automapper or the codegen version
-        FromDate = Utils.TryParseHumanReadableDateTimeOffset(options.FromDate, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue;
-        ToDate = Utils.TryParseHumanReadableDateTimeOffset(options.ToDate, out var _toDate) ? _toDate : DateTimeOffset.Now;
-        Path = options.Path;
-        Mailmap = options.Mailmap;
-        Format = options.Format;
+        // TODO: Convert this to Automapper or the codegen version
+        var result = new Options
+        {
+            FromDate = Utils.TryParseHumanReadableDateTimeOffset(options.FromDate, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue,
+            ToDate = Utils.TryParseHumanReadableDateTimeOffset(options.ToDate, out var _toDate) ? _toDate : DateTimeOffset.Now,
+            Path = options.Path,
+            Mailmap = options.Mailmap,
+            Format = options.Format
+        };
+        return result;
     }
     public DateTimeOffset FromDate { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset ToDate { get; set; } = DateTimeOffset.Now;
     public string Path { get; set; } = "";
     public string Mailmap { get; set; } = "";
+    public bool ShowSummary { get; set; } = false;
     public Format Format { get; set; }
 }
 
@@ -48,7 +53,7 @@ public class ConfigOptions
     }
     public string FromDate { get; set; } = "";
     public string ToDate { get; set; } = "";
-    public string Path { get; set; } = Directory.GetCurrentDirectory();
+    public string Path { get; set; } = "";
     public string Mailmap { get; set; } = "";
     public Format Format { get; set; } = Format.Table;
 
