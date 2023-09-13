@@ -1,8 +1,8 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
-using LibGit2Sharp;
-GlobalSettings.NativeLibraryPath = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "libgit2-e632535.so");
+// using LibGit2Sharp;
+// GlobalSettings.NativeLibraryPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libgit2-e632535.so");
 
 var Path = new Argument<string>("path", description: "Path to search for git repositories", getDefaultValue: Directory.GetCurrentDirectory);
 var FromDate = new Option<DateTimeOffset?>("--from", description: "Starting date for commits to be considered",
