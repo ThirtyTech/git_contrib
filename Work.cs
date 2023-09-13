@@ -134,7 +134,7 @@ public static class Work
 				}
 			}).OrderByDescending(a => a.Totals.Lines);
 
-			if (options.Format == Format.Table)
+			if (options.Format == global::Format.Table)
 			{
 
 				var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
@@ -149,7 +149,7 @@ public static class Work
 				}
 				table.Write();
 			}
-			else if (options.Format == Format.Json)
+			else if (options.Format == global::Format.Json)
 			{
 				Console.WriteLine(JsonSerializer.Serialize(mergedAuthorContribs));
 			}

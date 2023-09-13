@@ -20,7 +20,6 @@
     <PackageReference Include="Mapster" Version="7.3.0" />
     <PackageReference Include="ShellProgressBar" Version="5.2.0" />
     <PackageReference Include="System.Commandline" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="System.CommandLine.DragonFruit" Version="0.4.0-alpha.22272.1" />
     <PackageReference Include="System.Reactive" Version="6.0.0" />
     <PackageReference Include="System.Reactive.Linq" Version="6.0.0" />
   </ItemGroup>

@@ -6,11 +6,11 @@ public class Mailmap : IDictionary<string, string>
 
 	public Mailmap(string path)
 	{
-		if (!File.Exists(Path.Combine(path, ".mailmap")))
+		if (!File.Exists(System.IO.Path.Combine(path, ".mailmap")))
 		{
 			return;
 		}
-		foreach (var line in File.ReadLines(Path.Combine(path, ".mailmap")))
+		foreach (var line in File.ReadLines(System.IO.Path.Combine(path, ".mailmap")))
 		{
 			// Ignore comments and empty lines
 			if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
