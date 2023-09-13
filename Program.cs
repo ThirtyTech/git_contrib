@@ -49,7 +49,7 @@ root.SetHandler((context) =>
 		FromDate = context.ParseResult.GetValueForOption(FromDate) ?? DateTimeOffset.MinValue,
 		ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
 		Path = context.ParseResult.GetValueForArgument(Path),
-		Mailmap = context.ParseResult.GetValueForOption(Mailmap),
+		Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
 		Format = context.ParseResult.GetValueForOption(Format),
 		ShowSummary = context.ParseResult.GetValueForOption(ShowSummary)
 	});
