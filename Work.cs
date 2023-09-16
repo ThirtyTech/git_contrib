@@ -63,9 +63,9 @@ public static class Work
 
             // Filters out merged branch commits;
             var commits = repo.Commits.QueryBy(filter)
-            .Where(c => c.Parents.Count() == 1)
-            .Where(c => c.Committer.When >= options.FromDate)
-            .Where(c => c.Committer.When <= options.ToDate);
+                .Where(c => c.Parents.Count() == 1)
+                .Where(c => c.Committer.When >= options.FromDate)
+                .Where(c => c.Committer.When <= options.ToDate);
 
             var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(MaxConcurrency).Select(c =>
             {
@@ -82,16 +82,22 @@ public static class Work
 
             var uniqueCommits = uniqueCommitsEarly.Select(c => c.Commit);
             var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
-            var pbar = new ProgressBar(uniqueCommitsGroupedByAuthor.Count(), "Processing commits by author", new ProgressBarOptions
-            {
-                ForegroundColor = ConsoleColor.Yellow,
-                ForegroundColorDone = ConsoleColor.DarkGreen,
-                ProgressCharacter = '─',
-                ProgressBarOnBottom = true
-            });
+            var pbar = new ProgressBar(
+                uniqueCommitsGroupedByAuthor.Count(),
+                "Processing commits by author",
+                new ProgressBarOptions
+                {
+                    ForegroundColor = ConsoleColor.Yellow,
+                    ForegroundColorDone = ConsoleColor.DarkGreen,
+                    ProgressCharacter = '─',
+                    ProgressBarOnBottom = true
+                }
+            );
 
             // Loop through each group of commits by author
-            var authorContribs = uniqueCommitsGroupedByAuthor.AsParallel().WithDegreeOfParallelism(MaxConcurrency)
+            var authorContribs = uniqueCommitsGroupedByAuthor
+            .AsParallel()
+            .WithDegreeOfParallelism(MaxConcurrency)
             .Select(author =>
             {
                 var totals = author.Select(c =>
