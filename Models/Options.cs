@@ -23,6 +23,7 @@ public class Options
     public string Mailmap { get; set; } = "";
     public bool ShowSummary { get; set; } = false;
     public Format Format { get; set; }
+    public bool Fetch { get; set; } = true;
 }
 
 public class ConfigOptions
@@ -62,5 +63,6 @@ public class ConfigOptions
 public enum Format
 {
     Table,
-    Json
+    Json,
+    None
 }

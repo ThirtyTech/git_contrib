@@ -37,12 +37,23 @@ var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config
     var input = result.Tokens.Single().Value;
     return new ConfigOptions(input);
 });
-var config = new Command("config", "Configure defaults for the tool")
+var Config = new Command("config", "Configure defaults for the tool")
 {
     ConfigArg
 };
 
-root.AddCommand(config);
+var Plot = new Command("plot", "Plot the results of the analysis")
+{
+    FromDate,
+    ToDate,
+    Path,
+    Mailmap,
+    Format,
+};
+
+root.AddCommand(Config);
+root.AddCommand(Plot);
+
 root.SetHandler((context) =>
 {
     Work.DoWork(new Options
@@ -56,9 +67,23 @@ root.SetHandler((context) =>
     });
 });
 
-config.SetHandler((options) =>
+
+Config.SetHandler((options) =>
 {
     Work.DoWork(Options.Convert(options.ParseResult.GetValueForArgument(ConfigArg)));
+});
+
+Plot.SetHandler(async (context) =>
+{
+    await CommitPlot.DoWorkAsync(new Options
+    {
+        FromDate = context.ParseResult.GetValueForOption(FromDate) ?? DateTimeOffset.MinValue,
+        ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
+        Path = context.ParseResult.GetValueForArgument(Path),
+        Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
+        Format = context.ParseResult.GetValueForOption(Format),
+    });
+
 });
 
 return await new CommandLineBuilder(root)

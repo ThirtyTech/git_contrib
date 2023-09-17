@@ -33,14 +33,14 @@ public static class Work
 
     public static readonly int MaxConcurrency = Environment.ProcessorCount - 1;
 
-    public static void DoWork(Options options)
+    public static IEnumerable<AuthorContrib> DoWork(Options options)
     {
 
         Console.WriteLine("Processing directory: " + options.Path);
         // Making commit for the same of it here
         using (var repo = new Repository(options.Path))
         {
-            if (repo.Network.Remotes.Count() > 0)
+            if (options.Fetch && repo.Network.Remotes.Count() > 0)
             {
                 Console.WriteLine("Fetching remote: " + repo.Network.Remotes.First().Name);
                 var psi = new ProcessStartInfo
@@ -93,6 +93,9 @@ public static class Work
                     ProgressBarOnBottom = true
                 }
             );
+            if(options.Format == global::Format.None) {
+                pbar.Dispose();
+            }
 
             // Loop through each group of commits by author
             var authorContribs = uniqueCommitsGroupedByAuthor
@@ -157,8 +160,10 @@ public static class Work
             }
             else if (options.Format == global::Format.Json)
             {
-                Console.WriteLine(JsonSerializer.Serialize(mergedAuthorContribs));
+                var result = JsonSerializer.Serialize(mergedAuthorContribs);
+                Console.WriteLine(result);
             }
+            return mergedAuthorContribs;
 
         }
     }
