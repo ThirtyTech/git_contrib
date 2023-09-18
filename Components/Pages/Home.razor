@@ -1,0 +1,64 @@
+﻿@page "/"
+@attribute [RenderModeServer]
+@using System.Reactive
+@using System.Reactive.Linq
+
+<PageTitle>Home</PageTitle>
+
+<div>
+    <MudChart ChartType="ChartType.Line" ChartSeries="@Series" XAxisLabels="@XAxisLabels" Width="100%" Height="350px">
+    </MudChart>
+</div>
+
+@code {
+    public List<ChartSeries> Series = new List<ChartSeries>();
+    public string[] XAxisLabels = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var options = new Options()
+            {
+                Path = @"",
+                FromDate = DateTimeOffset.Now.AddDays(-10)
+            };
+
+        var days = (DateTime.Now - options.FromDate).Days;
+        var result = await Observable.Start(() => Work.DoWork(new Options
+            {
+                Fetch = false,
+                FromDate = options.FromDate,
+                ToDate = options.ToDate,
+                Path = options.Path,
+                Mailmap = options.Mailmap,
+                Format = global::Format.None,
+            }));
+
+
+        var rangeResults = await Observable.Range(0, days)
+        .Select(i => Observable.Start(() => Work.DoWork(new Options
+            {
+                Fetch = false,
+                FromDate = options.FromDate.AddDays(i),
+                ToDate = options.FromDate.AddDays(i + 1),
+                Path = options.Path,
+                Mailmap = options.Mailmap,
+                Format = global::Format.None,
+                ShowSummary = options.ShowSummary
+            })))
+        .Merge(Environment.ProcessorCount - 1)
+        .ToList();
+
+        XAxisLabels = Enumerable.Range(0, days).Select(i => options.FromDate.AddDays(i).ToString("MM/dd")).ToArray();
+
+        var uniqueAuthors = rangeResults.SelectMany(x => x).Select(x => x.Author).Distinct().ToList();
+
+        Series = uniqueAuthors.Select(author => new ChartSeries
+            {
+                Name = author,
+                Data = Enumerable.Range(0, days).Select(i => rangeResults[i].FirstOrDefault(x => x.Author == author)?.Totals.Lines ??
+                0d).ToArray()
+            }).ToList();
+
+    }
+
+}

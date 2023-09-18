@@ -33,17 +33,17 @@ public static class Utils
 
             case "day":
             case "days":
-                dateTimeOffset = now.AddDays(-quantity);
+                dateTimeOffset = now.AddDays(-quantity).Date;
                 break;
 
             case "week":
             case "weeks":
-                dateTimeOffset = now.AddDays(-quantity * 7);
+                dateTimeOffset = now.AddDays(-quantity * 7).Date;
                 break;
 
             case "month":
             case "months":
-                dateTimeOffset = now.AddMonths(-quantity);
+                dateTimeOffset = now.AddMonths(-quantity).Date;
                 break;
 
             default:

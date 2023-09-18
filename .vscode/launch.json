@@ -9,8 +9,19 @@
 			"type": "coreclr",
 			"request": "launch",
 			"preLaunchTask": "build",
-			"program": "${workspaceFolder}/bin/Debug/net8.0/git-contrib.dll",
+			"program": "${workspaceFolder}/bin/Debug/net8.0/git_contrib.dll",
 			"args": ["--from", "2 weeks"],
+			"cwd": "${workspaceFolder}",
+			"console": "internalConsole",
+			"stopAtEntry": false
+		},
+		{
+			"name": "Blazor Server",
+			"type": "coreclr",
+			"request": "launch",
+			"preLaunchTask": "build",
+			"program": "${workspaceFolder}/bin/Debug/net8.0/git_contrib.dll",
+			"args": ["chart"],
 			"cwd": "${workspaceFolder}",
 			"console": "internalConsole",
 			"stopAtEntry": false

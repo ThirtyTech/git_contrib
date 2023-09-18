@@ -7,7 +7,7 @@
 			"type": "process",
 			"args": [
 				"build",
-				"${workspaceFolder}/git-contrib.sln",
+				"${workspaceFolder}/git_contrib.sln",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
@@ -19,7 +19,7 @@
 			"type": "process",
 			"args": [
 				"publish",
-				"${workspaceFolder}/git-contrib.sln",
+				"${workspaceFolder}/git_contrib.sln",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
@@ -33,7 +33,7 @@
 				"watch",
 				"run",
 				"--project",
-				"${workspaceFolder}/git-contrib.sln"
+				"${workspaceFolder}/git_contrib.sln"
 			],
 			"problemMatcher": "$msCompile"
 		}

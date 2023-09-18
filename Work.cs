@@ -36,13 +36,19 @@ public static class Work
     public static IEnumerable<AuthorContrib> DoWork(Options options)
     {
 
-        Console.WriteLine("Processing directory: " + options.Path);
+        if (options.Format != global::Format.None)
+        {
+            Console.WriteLine("Processing directory: " + options.Path);
+        }
         // Making commit for the same of it here
         using (var repo = new Repository(options.Path))
         {
             if (options.Fetch && repo.Network.Remotes.Count() > 0)
             {
-                Console.WriteLine("Fetching remote: " + repo.Network.Remotes.First().Name);
+                if (options.Format != global::Format.None)
+                {
+                    Console.WriteLine("Fetching remote: " + repo.Network.Remotes.First().Name);
+                }
                 var psi = new ProcessStartInfo
                 {
                     FileName = "git",
@@ -80,9 +86,9 @@ public static class Work
                 };
             }).ToList().DistinctBy(c => c.UniqueHash).ToList();
 
-            var uniqueCommits = uniqueCommitsEarly.Select(c => c.Commit);
+            var uniqueCommits = uniqueCommitsEarly.Select(c => c.Commit).OrderBy(x => x.Author.When).ToList();
             var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
-            var pbar = new ProgressBar(
+            var pbar = options.Format != global::Format.None ? new ProgressBar(
                 uniqueCommitsGroupedByAuthor.Count(),
                 "Processing commits by author",
                 new ProgressBarOptions
@@ -92,10 +98,7 @@ public static class Work
                     ProgressCharacter = '─',
                     ProgressBarOnBottom = true
                 }
-            );
-            if(options.Format == global::Format.None) {
-                pbar.Dispose();
-            }
+            ) : null;
 
             // Loop through each group of commits by author
             var authorContribs = uniqueCommitsGroupedByAuthor
@@ -112,7 +115,7 @@ public static class Work
 
                 }).ToList();
 
-                pbar.Tick();
+                pbar?.Tick();
 
                 return new AuthorContrib
                 {
@@ -127,7 +130,7 @@ public static class Work
                     }
                 };
             }).ToList();
-            pbar.Dispose();
+            pbar?.Dispose();
 
             // Merge author records where name matches mailmap.validate
             var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib
@@ -148,6 +151,9 @@ public static class Work
 
                 var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
                 table.Options.EnableCount = false;
+                Console.WriteLine("Date Range: " + options.FromDate.ToString("MM/dd/yyyy") + " - " + options.ToDate.ToString("MM/dd/yyyy"));
+                Console.WriteLine("First Commit: " + uniqueCommits.FirstOrDefault()?.Committer.When ?? "");
+                Console.WriteLine("Last Commit: " + uniqueCommits.LastOrDefault()?.Committer.When ?? "");
                 foreach (var author in mergedAuthorContribs)
                 {
                     table.AddRow(author.Author, author.Totals.Files.ToString("N0"), author.Totals.Commits.ToString("N0"), author.Totals.Lines.ToString("N0"));
