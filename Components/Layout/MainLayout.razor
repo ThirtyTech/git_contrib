@@ -1,16 +1,19 @@
 ﻿@inherits LayoutComponentBase
+@inject Options Options
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudLayout>
     <MudAppBar>
-        My Application
+        <MudText Typo="Typo.h4" Class="mud-typography">Git Contrib</MudText>
+        <MudSpacer />
+        <MudText Typo="Typo.h5" Class="mud-typography">@Options.Path</MudText>
     </MudAppBar>
-    <MudDrawer Open="false">
+        <MudDrawer Open="false">
 
-    </MudDrawer>
-    <MudMainContent>
-        @Body
+        </MudDrawer>
+        <MudMainContent>
+            @Body
     </MudMainContent>
 </MudLayout>
 

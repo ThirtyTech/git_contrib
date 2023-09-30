@@ -51,7 +51,7 @@ var Plot = new Command("plot", "Plot the results of the analysis")
     Format,
 };
 
-var Chart = new Command("chart", "Laucnh interactive server to view results");
+var Chart = new Command("chart", "Laucnh interactive server to view results") { Path };
 
 root.AddCommand(Config);
 root.AddCommand(Plot);
@@ -91,7 +91,11 @@ Plot.SetHandler(async (context) =>
 
 Chart.SetHandler((context) =>
 {
-    ChartServer.DoWork();
+    ChartServer.DoWork(new Options
+    {
+        Path = context.ParseResult.GetValueForArgument(Path),
+
+    });
 });
 
 return await new CommandLineBuilder(root)

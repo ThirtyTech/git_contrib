@@ -2,10 +2,12 @@ using MudBlazor.Services;
 
 public static class ChartServer
 {
-    public static void DoWork()
+    public static void DoWork(Options options)
     {
 
         var builder = WebApplication.CreateBuilder();
+
+        builder.Services.AddSingleton(options);
 
         builder.Services.AddControllers();
 
