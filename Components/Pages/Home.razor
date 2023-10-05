@@ -3,12 +3,21 @@
 @using System.Linq
 @using System.Reactive
 @using System.Reactive.Linq
-@inject Options Options;
+@inject Options Options
 
 <PageTitle>Home</PageTitle>
 
-<div style="margin-top:16px; padding: 16px">
-    <MudGrid Spacing="2">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+
+    <MudSelect Label="Authors" MultiSelection="true" @bind-SelectedValues="SelectedAuthors">
+        @foreach (var author in Authors)
+        {
+            <MudSelectItem Value="@author">
+                @author
+            </MudSelectItem>
+        }
+    </MudSelect>
+    <MudGrid Spacing="2" style="margin-top: 20px;">
         <MudItem xs="6">
             <MudPaper>
                 <MudText Typo="Typo.h5" style="padding: 12px">Lines of code</MudText>
@@ -35,13 +44,15 @@
         </MudItem>
     </MudGrid>
 
+</MudContainer>
 
-</div>
 
 @code {
     public List<ChartSeries> LinesOfCode = new List<ChartSeries>();
     public List<ChartSeries> Files = new List<ChartSeries>();
     public List<ChartSeries> Commits = new List<ChartSeries>();
+    public List<string> Authors = new List<string>();
+    private IEnumerable<string> SelectedAuthors { get; set; } = new HashSet<string>();
     public string[] XAxisLabels = [];
     public ChartOptions ChartOptions = new ChartOptions
         {
@@ -50,13 +61,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var options = new Options()
-            {
-                Path = Options.Path,
-                FromDate = DateTimeOffset.Now.AddDays(-10)
-            };
-
-        var days = (DateTime.Now - options.FromDate).Days;
+        var days = (DateTime.Now - Options.FromDate).Days;
 
         var rangeResults = (await Observable.Range(0, days)
         .Select(i => Observable.Start(() =>
@@ -64,10 +69,10 @@
             var result = Work.DoWork(new Options
                 {
                     Fetch = false,
-                    FromDate = options.FromDate.AddDays(i).Date,
-                    ToDate = options.FromDate.AddDays(i + 1).Date,
-                    Path = options.Path,
-                    Mailmap = options.Mailmap,
+                    FromDate = Options.FromDate.AddDays(i).Date,
+                    ToDate = Options.FromDate.AddDays(i + 1).Date,
+                    Path = Options.Path,
+                    Mailmap = Options.Mailmap,
                     Format = global::Format.None
                 });
             return (i, result);
@@ -75,9 +80,15 @@
         .Merge(Environment.ProcessorCount - 1).ToList())
         .OrderBy(x => x.i).ToList();
 
-        XAxisLabels = Enumerable.Range(0, days).Select(i => options.FromDate.AddDays(i).ToString("MM/dd")).ToArray();
+        XAxisLabels = Enumerable.Range(0, days).Select(i => Options.FromDate.AddDays(i).ToString("MM/dd")).ToArray();
 
         var uniqueAuthors = rangeResults.SelectMany(x => x.result).Select(x => x.Author).Distinct().ToList();
+        if (Options.IgnoreAuthors.Length > 0)
+        {
+            // Check that unique author does not contain any strings contained in options.ignoredAuthors
+            uniqueAuthors = uniqueAuthors.Where(x => !Options.IgnoreAuthors.Any(y => x.Contains(y))).ToList();
+        }
+        Authors = uniqueAuthors;
 
         LinesOfCode = uniqueAuthors.Select(author =>
         {

@@ -24,6 +24,7 @@ public class Options
     public bool ShowSummary { get; set; } = false;
     public Format Format { get; set; }
     public bool Fetch { get; set; } = true;
+    public string[] IgnoreAuthors { get; set; } = [];
 }
 
 public class ConfigOptions
