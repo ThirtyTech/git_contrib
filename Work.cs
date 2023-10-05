@@ -110,7 +110,7 @@ public static class Work
                 {
                     var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
                     var Files = patch.Select(p => p.Path).Where(p => !options.IgnoreFiles.Any(e => p.Contains(e))).ToList();
-                    var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e) && !options.IgnoreFiles.Any(e => p.Path.Contains(e)))).Sum(p => p.LinesAdded + p.LinesDeleted);
+                    var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e)) && !options.IgnoreFiles.Any(e => p.Path.Contains(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
                     return (Files, Lines);
 
                 }).ToList();
@@ -133,17 +133,20 @@ public static class Work
             pbar?.Dispose();
 
             // Merge author records where name matches mailmap.validate
-            var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g => new AuthorContrib
+            var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g =>
             {
-                Author = g.Key,
-                Project = options.Path,
-                Commits = g.SelectMany(a => a.Commits).ToList(),
-                Totals = new Totals
+                return new AuthorContrib
                 {
-                    Commits = g.Sum(a => a.Totals.Commits),
-                    Files = g.Sum(a => a.Totals.Files),
-                    Lines = g.Sum(a => a.Totals.Lines)
-                }
+                    Author = g.Key,
+                    Project = options.Path,
+                    Commits = g.SelectMany(a => a.Commits).ToList(),
+                    Totals = new Totals
+                    {
+                        Commits = g.Sum(a => a.Totals.Commits),
+                        Files = g.Sum(a => a.Totals.Files),
+                        Lines = g.Sum(a => a.Totals.Lines)
+                    }
+                };
             }).OrderByDescending(a => a.Totals.Lines);
 
             if (options.Format == global::Format.Table)
