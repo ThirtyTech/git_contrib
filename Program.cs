@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
+using LibGit2Sharp;
 // using LibGit2Sharp;
 // GlobalSettings.NativeLibraryPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libgit2-e632535.so");
 
@@ -23,6 +24,7 @@ var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file
 var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
 var ShowSummary = new Option<bool>("--show-summary", description: "Show project summary details", getDefaultValue: () => false);
 var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore", getDefaultValue: () => new string[] { });
+var IgnoreFiles = new Option<string[]>("--ignore-files", description: "Files to ignore", getDefaultValue: () => new string[] { });
 
 var root = new RootCommand {
             FromDate,
@@ -31,7 +33,8 @@ var root = new RootCommand {
             Mailmap,
             Format,
             ShowSummary,
-            IgnoreAuthors
+            IgnoreAuthors,
+            IgnoreFiles
         };
 
 var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config file", parse: (result) =>
@@ -53,7 +56,7 @@ var Plot = new Command("plot", "Plot the results of the analysis")
     Format,
 };
 
-var Chart = new Command("chart", "Laucnh interactive server to view results") { Path, IgnoreAuthors, FromDate, ToDate, Mailmap };
+var Chart = new Command("chart", "Laucnh interactive server to view results") { Path, IgnoreAuthors, FromDate, ToDate, Mailmap, IgnoreFiles };
 
 root.AddCommand(Config);
 root.AddCommand(Plot);
@@ -68,7 +71,9 @@ root.SetHandler((context) =>
         Path = context.ParseResult.GetValueForArgument(Path),
         Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
         Format = context.ParseResult.GetValueForOption(Format),
-        ShowSummary = context.ParseResult.GetValueForOption(ShowSummary)
+        ShowSummary = context.ParseResult.GetValueForOption(ShowSummary),
+        IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
+        IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),
     });
 });
 
@@ -88,7 +93,6 @@ Plot.SetHandler(async (context) =>
         Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
         Format = context.ParseResult.GetValueForOption(Format),
     });
-
 });
 
 Chart.SetHandler((context) =>
@@ -99,7 +103,8 @@ Chart.SetHandler((context) =>
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
         Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
         Path = context.ParseResult.GetValueForArgument(Path),
-        IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? new string[] { },
+        IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
+        IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),
     });
 });
 

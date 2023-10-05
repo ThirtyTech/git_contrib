@@ -25,6 +25,7 @@ public class Options
     public Format Format { get; set; }
     public bool Fetch { get; set; } = true;
     public string[] IgnoreAuthors { get; set; } = [];
+    public string[] IgnoreFiles { get; set; } = [];
 }
 
 public class ConfigOptions

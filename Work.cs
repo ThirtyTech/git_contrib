@@ -109,8 +109,8 @@ public static class Work
                 var totals = author.Select(c =>
                 {
                     var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
-                    var Files = patch.Select(p => p.Path);
-                    var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
+                    var Files = patch.Select(p => p.Path).Where(p => !options.IgnoreFiles.Any(e => p.Contains(e))).ToList();
+                    var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e) && !options.IgnoreFiles.Any(e => p.Path.Contains(e)))).Sum(p => p.LinesAdded + p.LinesDeleted);
                     return (Files, Lines);
 
                 }).ToList();
