@@ -86,8 +86,14 @@ public static class Work
                 };
             }).ToList().DistinctBy(c => c.UniqueHash).ToList();
 
-            var uniqueCommits = uniqueCommitsEarly.Select(c => c.Commit).OrderBy(x => x.Author.When).ToList();
+            var uniqueCommits = uniqueCommitsEarly
+                .Select(c => c.Commit)
+                .OrderBy(x => x.Author.When)
+                .Where(x => !options.IgnoreAuthors.Any(e => x.Author.ToString().Contains(e)))
+                .ToList();
+
             var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
+
             var pbar = options.Format != global::Format.None ? new ProgressBar(
                 uniqueCommitsGroupedByAuthor.Count(),
                 "Processing commits by author",
@@ -104,7 +110,6 @@ public static class Work
             var authorContribs = uniqueCommitsGroupedByAuthor
             .AsParallel()
             .WithDegreeOfParallelism(MaxConcurrency)
-            .Where(author => !options.IgnoreAuthors.Any(e => author.Key.Contains(e)))
             .Select(author =>
             {
                 var totals = author.Select(c =>

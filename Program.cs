@@ -24,7 +24,7 @@ parseArgument: (result) =>
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
 var ShowSummary = new Option<bool>("--show-summary", description: "Show project summary details");
-var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore");
+var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore") { AllowMultipleArgumentsPerToken = true };
 var IgnoreFiles = new Option<string[]>("--ignore-files", description: "Files to ignore") { AllowMultipleArgumentsPerToken = true };
 
 var root = new RootCommand {
