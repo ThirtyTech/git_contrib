@@ -104,6 +104,7 @@ public static class Work
             var authorContribs = uniqueCommitsGroupedByAuthor
             .AsParallel()
             .WithDegreeOfParallelism(MaxConcurrency)
+            .Where(author => !options.IgnoreAuthors.Any(e => author.Key.Contains(e)))
             .Select(author =>
             {
                 var totals = author.Select(c =>

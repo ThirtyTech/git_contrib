@@ -73,6 +73,7 @@
                     ToDate = Options.FromDate.AddDays(i + 1).Date,
                     Path = Options.Path,
                     Mailmap = Options.Mailmap,
+                    IgnoreAuthors = Options.IgnoreAuthors,
                     IgnoreFiles = Options.IgnoreFiles,
                     Format = global::Format.None
                 });
@@ -84,11 +85,6 @@
         XAxisLabels = Enumerable.Range(0, days).Select(i => Options.FromDate.AddDays(i).ToString("MM/dd")).ToArray();
 
         var uniqueAuthors = rangeResults.SelectMany(x => x.result).Select(x => x.Author).Distinct().ToList();
-        if (Options.IgnoreAuthors.Length > 0)
-        {
-            // Check that unique author does not contain any strings contained in options.ignoredAuthors
-            uniqueAuthors = uniqueAuthors.Where(x => !Options.IgnoreAuthors.Any(y => x.Contains(y))).ToList();
-        }
         Authors = uniqueAuthors;
 
         LinesOfCode = uniqueAuthors.Select(author =>
