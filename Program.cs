@@ -35,7 +35,7 @@ var root = new RootCommand {
             Format,
             ShowSummary,
             IgnoreAuthors,
-            IgnoreFiles
+            IgnoreFiles,
         };
 
 var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config file", parse: (result) =>
@@ -82,6 +82,7 @@ root.SetHandler((context) =>
 
 Config.SetHandler((options) =>
 {
+
     Work.DoWork(Options.Convert(options.ParseResult.GetValueForArgument(ConfigArg)));
 });
 

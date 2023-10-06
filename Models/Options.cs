@@ -13,7 +13,9 @@ public class Options
             ToDate = Utils.TryParseHumanReadableDateTimeOffset(options.ToDate, out var _toDate) ? _toDate : DateTimeOffset.Now,
             Path = options.Path,
             Mailmap = options.Mailmap,
-            Format = options.Format
+            Format = options.Format,
+            IgnoreAuthors = options.IgnoreAuthors,
+            IgnoreFiles = options.IgnoreFiles,
         };
         return result;
     }
@@ -59,6 +61,8 @@ public class ConfigOptions
     public string Path { get; set; } = "";
     public string Mailmap { get; set; } = "";
     public Format Format { get; set; } = Format.Table;
+    public string[] IgnoreAuthors { get; set; } = [];
+    public string[] IgnoreFiles { get; set; } = [];
 
 }
 
