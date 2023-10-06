@@ -12,9 +12,7 @@
     <MudSelect Label="Authors" MultiSelection="true" @bind-SelectedValues="SelectedAuthors">
         @foreach (var author in Authors)
         {
-            <MudSelectItem Value="@author">
-                @author
-            </MudSelectItem>
+            <MudSelectItem Value="@author">@author</MudSelectItem>
         }
     </MudSelect>
     <MudGrid Spacing="2" style="margin-top: 20px;">

@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reactive.Linq;
 using ConsoleTables;
-using ScottPlot;
 
 public static class CommitPlot
 {

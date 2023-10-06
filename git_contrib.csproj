@@ -16,8 +16,6 @@
     <PackageReference Include="Libgit2sharp.nativebinaries" Version="2.0.320" />
     <PackageReference Include="Mapster" Version="7.4.0" />
     <PackageReference Include="MudBlazor" Version="6.10.0" />
-    <PackageReference Include="ScottPlot" Version="5.0.8-beta" />
-    <PackageReference Include="Sharprompt" Version="2.4.5" />
     <PackageReference Include="ShellProgressBar" Version="5.2.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.6" />
     <PackageReference Include="System.Commandline" Version="2.0.0-beta4.22272.1" />
@@ -26,13 +24,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FluentValidationExcludedCultures Include="de;es;fr;it;ja;ko;ru;tr;cl;cs;pl;pt-BR;zh-Hans;zh-Hant;Properties">
+    <FluentValidationExcludedCultures
+      Include="de;es;fr;it;ja;ko;ru;tr;cl;cs;pl;pt-BR;zh-Hans;zh-Hant;Properties">
       <InProject>false</InProject>
     </FluentValidationExcludedCultures>
   </ItemGroup>
 
   <Target Name="RemoveTranslationsAfterPackage" AfterTargets="CopyFilesToPublishDirectory">
-      <RemoveDir Directories="@(FluentValidationExcludedCultures->'$(PublishDir)%(Filename)')" />
+    <RemoveDir Directories="@(FluentValidationExcludedCultures->'$(PublishDir)%(Filename)')" />
   </Target>
 
   <Target Name="RemoveTranslationsAfterBuild" AfterTargets="AfterBuild">
