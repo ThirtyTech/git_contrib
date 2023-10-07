@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Services;
 
 public static class ChartServer
@@ -30,8 +31,7 @@ public static class ChartServer
         app.UseRouting();
         app.MapControllers();
 
-        app.MapRazorComponents<git_contrib.Components.App>()
-            .AddServerRenderMode();
+        app.MapRazorComponents<git_contrib.Components.App>().AddServerRenderMode();
 
         app.Run();
     }
