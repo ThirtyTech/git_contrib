@@ -11,10 +11,10 @@
 <PageTitle>Home</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge">
-    <MudDatePicker Label="From Date" DateChanged="@(async(x) => await DateChange(x))" />
+    <MudDatePicker Label="From Date" DateChanged="DateChange" />
 
     <MudSelect T="string" Label="Authors" MultiSelection="true"
-        SelectedValuesChanged="@(async(x) => await UpdateAuthors(x))">
+        SelectedValuesChanged="UpdateAuthors">
         @foreach (var author in Authors)
         {
             <MudSelectItem Value="@author">@author</MudSelectItem>
