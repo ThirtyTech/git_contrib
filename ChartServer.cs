@@ -15,7 +15,7 @@ public static class ChartServer
         builder.Services
         .AddMudServices()
         .AddRazorComponents()
-        .AddServerComponents();
+        .AddInteractiveServerComponents();
 
         var app = builder.Build();
 
@@ -30,8 +30,9 @@ public static class ChartServer
 
         app.UseRouting();
         app.MapControllers();
+        app.UseAntiforgery();
 
-        app.MapRazorComponents<git_contrib.Components.App>().AddServerRenderMode();
+        app.MapRazorComponents<git_contrib.Components.App>().AddInteractiveServerRenderMode();
 
         app.Run();
     }
