@@ -5,21 +5,38 @@
 @using System.Text.Json
 @inject Options Options
 
-<MudThemeProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
-<PageTitle>Home</PageTitle>
+<MudThemeProvider IsDarkMode />
+ <MudDialogProvider />
+ <MudSnackbarProvider />
+ <PageTitle>Home</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge">
-    <MudDatePicker Label="From Date" DateChanged="DateChange" />
-
-    <MudSelect T="string" Label="Authors" MultiSelection="true"
-        SelectedValuesChanged="UpdateAuthors">
-        @foreach (var author in Authors)
+ <MudContainer MaxWidth="MaxWidth.ExtraLarge" class="mt-10">
+     <div class="flex gap-8">
+         <MudSelect T="string" Label="Authors" MultiSelection="true" SelectedValues="@SelectedAuthors" class="flex-1"
+             SelectedValuesChanged="UpdateAuthors" SelectAll>
+            @foreach (var author in Authors)
+            {
+                <MudSelectItem Value="@author">@author</MudSelectItem>
+            }
+        </MudSelect>
+        <MudDatePicker class="flex-none" Label="From Date" Date="FromDate" DateChanged="@(async(date) => {
+        if (date.HasValue)
         {
-            <MudSelectItem Value="@author">@author</MudSelectItem>
+            FromDate = date.Value;
+            await UpdateAuthors(SelectedAuthors);
         }
-    </MudSelect>
+
+        })" />
+        <MudDatePicker class="flex-none" Label="To Date" Date="ToDate" DateChanged="@(async(date) => {
+
+        if (date.HasValue)
+        {
+            ToDate = date.Value;
+            await UpdateAuthors(SelectedAuthors);
+        }
+        })" />
+
+    </div>
     <MudGrid Spacing="2" style="margin-top: 20px;">
         <MudItem xs="6">
             <MudPaper>
@@ -51,6 +68,7 @@
 
 
 @code {
+    public int? IntValue { get; set; } = 5;
     public List<ChartSeries> LinesOfCode = new();
     public List<ChartSeries> Files = new();
     public List<ChartSeries> Commits = new();
@@ -58,27 +76,30 @@
     private IEnumerable<string> SelectedAuthors { get; set; } = new HashSet<string>();
     public string[] XAxisLabels = Array.Empty<string>();
     public DateTime FromDate = DateTime.Now.AddDays(-7).Date;
+    public DateTime ToDate = DateTime.Now.Date;
 
     public ChartOptions ChartOptions = new()
         {
             YAxisTicks = 1
         };
 
-    public async Task DateChange(DateTime? date)
+    protected override async Task OnInitializedAsync()
     {
-        if (date.HasValue)
-        {
-            FromDate = date.Value;
-            await UpdateAuthors(SelectedAuthors);
-        }
-    }
+        var days = (DateTime.Now - Options.FromDate).Days;
+        FromDate = Options.FromDate.Date;
+        ToDate = Options.ToDate.Date;
 
+        await UpdateAuthors(Array.Empty<string>());
+    }
 
     public async Task UpdateAuthors(IEnumerable<string> authors)
     {
         SelectedAuthors = authors;
-        var days = (DateTime.Now - FromDate).Days + 1;
+        @* await test.CloseMenu(); *@
+
+        var days = (ToDate - FromDate).Days + 1;
         XAxisLabels = Enumerable.Range(0, days).Select(i => FromDate.AddDays(i).ToString("MM/dd")).ToArray();
+
         var rangeResults = (await Observable.Range(0, days)
         .Select(i => Observable.Start(() =>
         {
@@ -97,83 +118,16 @@
         }))
         .Merge(Environment.ProcessorCount - 1).ToList())
         .OrderBy(x => x.i).ToList();
+
         var uniqueAuthors = rangeResults.SelectMany(x => x.result).Select(x => x.Author).Distinct().ToList();
         if (SelectedAuthors.Count() > 0)
         {
             uniqueAuthors = uniqueAuthors.Where(x => SelectedAuthors.Contains(x)).ToList();
         }
-
-        LinesOfCode = uniqueAuthors.Select(author =>
+        if(Authors.Count() == 0)
         {
-            var data = Enumerable.Range(0, days).Select(i =>
-    {
-    var num = rangeResults[i].result.FirstOrDefault(x => x.Author == author)?.Totals.Lines;
-    return num ?? 0d;
-            }).ToArray();
-
-            return new ChartSeries
-                {
-                    Name = author,
-                    Data = data
-                };
-        }).ToList();
-
-        Files = uniqueAuthors.Select(author =>
-        {
-            var data = Enumerable.Range(0, days).Select(i =>
-    {
-    var num = rangeResults[i].result.FirstOrDefault(x => x.Author == author)?.Totals.Files;
-    return num ?? 0d;
-            }).ToArray();
-            return new ChartSeries
-                {
-                    Name = author,
-                    Data = data
-                };
-        }).ToList();
-
-        Commits = uniqueAuthors.Select(author =>
-        {
-            var data = Enumerable.Range(0, days).Select(i =>
-    {
-    var num = rangeResults[i].result.FirstOrDefault(x => x.Author == author)?.Totals.Commits;
-    return num ?? 0d;
-            }).ToArray();
-            return new ChartSeries
-                {
-                    Name = author,
-                    Data = data
-                };
-        }).ToList();
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        var days = (DateTime.Now - Options.FromDate).Days;
-
-        var rangeResults = (await Observable.Range(0, days)
-        .Select(i => Observable.Start(() =>
-        {
-            var result = Work.DoWork(new Options
-                {
-                    Fetch = false,
-                    FromDate = Options.FromDate.AddDays(i).Date,
-                    ToDate = Options.FromDate.AddDays(i + 1).Date,
-                    Path = Options.Path,
-                    Mailmap = Options.Mailmap,
-                    IgnoreAuthors = Options.IgnoreAuthors,
-                    IgnoreFiles = Options.IgnoreFiles,
-                    Format = global::Format.None
-                });
-            return (i, result);
-        }))
-        .Merge(Environment.ProcessorCount - 1).ToList())
-        .OrderBy(x => x.i).ToList();
-
-        XAxisLabels = Enumerable.Range(0, days).Select(i => Options.FromDate.AddDays(i).ToString("MM/dd")).ToArray();
-
-        var uniqueAuthors = rangeResults.SelectMany(x => x.result).Select(x => x.Author).Distinct().ToList();
-        Authors = uniqueAuthors;
+            Authors = uniqueAuthors;
+        }
 
         LinesOfCode = uniqueAuthors.Select(author =>
         {
