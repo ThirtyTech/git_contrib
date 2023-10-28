@@ -19,6 +19,7 @@ public class Options
         };
         return result;
     }
+    public bool ByDay { get; set; } = false;
     public DateTimeOffset FromDate { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset ToDate { get; set; } = DateTimeOffset.Now;
     public string Path { get; set; } = "";

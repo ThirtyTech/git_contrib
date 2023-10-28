@@ -21,6 +21,7 @@ parseArgument: (result) =>
     return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.Now;
 
 });
+var ByDay = new Option<bool>("--by-day", description: "Show results by day");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
 var ShowSummary = new Option<bool>("--show-summary", description: "Show project summary details");
@@ -36,6 +37,7 @@ var root = new RootCommand {
             ShowSummary,
             IgnoreAuthors,
             IgnoreFiles,
+            ByDay
         };
 
 var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config file", parse: (result) =>
@@ -57,7 +59,7 @@ var Plot = new Command("plot", "Plot the results of the analysis")
     Format,
 };
 
-var Chart = new Command("chart", "Laucnh interactive server to view results") { Path, IgnoreAuthors, FromDate, ToDate, Mailmap, IgnoreFiles };
+var Chart = new Command("chart", "Launch interactive server to view results") { Path, IgnoreAuthors, FromDate, ToDate, Mailmap, IgnoreFiles };
 
 root.AddCommand(Config);
 root.AddCommand(Plot);
@@ -69,6 +71,7 @@ root.SetHandler((context) =>
     {
         FromDate = context.ParseResult.GetValueForOption(FromDate) ?? DateTimeOffset.MinValue,
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
+        ByDay = context.ParseResult.GetValueForOption(ByDay),
         Path = context.ParseResult.GetValueForArgument(Path),
         Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
         Format = context.ParseResult.GetValueForOption(Format),

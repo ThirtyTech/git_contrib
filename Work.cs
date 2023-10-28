@@ -109,16 +109,26 @@ public static class Work
             // Loop through each group of commits by author
             var authorContribs = uniqueCommitsGroupedByAuthor
             .AsParallel()
-            .WithDegreeOfParallelism(MaxConcurrency)
+            .WithDegreeOfParallelism(1)
             .Select(author =>
             {
-                var totals = author.Select(c =>
+                // Group Author commits by DateOnly
+                var authorCommitsByDate = author.GroupBy(c => c.Author.When.Date).Select(g =>
                 {
-                    var patch = repo.Diff.Compare<Patch>(c.Tree, c.Parents?.First().Tree);
-                    var Files = patch.Select(p => p.Path).Where(p => !options.IgnoreFiles.Any(e => p.Contains(e))).ToList();
-                    var Lines = patch.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e)) && !options.IgnoreFiles.Any(e => p.Path.Contains(e))).Sum(p => p.LinesAdded + p.LinesDeleted);
-                    return (Files, Lines);
-
+                    var patches = g.SelectMany(c => repo.Diff.Compare<Patch>(c.Tree, c.Parents.First().Tree)).ToList();
+                    var files = patches.Select(p => p.Path).Where(p => !options.IgnoreFiles.Any(e => p.Contains(e))).Distinct().ToList();
+                    var filteredPatches = patches.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e)) && !options.IgnoreFiles.Any(e => p.Path.Contains(e))).ToList();
+                    var linesAdded = filteredPatches.Sum(p => p.LinesAdded);
+                    var linesDeleted = filteredPatches.Sum(p => p.LinesDeleted);
+                    return new Totals
+                    {
+                        Date = DateOnly.FromDateTime(g.Key),
+                        Files = files.Count(),
+                        Lines = linesAdded + linesDeleted,
+                        LinesAdded = linesAdded,
+                        LinesDeleted = linesDeleted,
+                        Commits = g.Count()
+                    };
                 }).ToList();
 
                 pbar?.Tick();
@@ -128,15 +138,17 @@ public static class Work
                     Author = author.Key,
                     Project = options.Path,
                     Commits = author.ToList(),
+                    TotalsByDate = authorCommitsByDate,
                     Totals = new Totals
                     {
                         Commits = author.Count(),
-                        Files = totals.SelectMany(f => f.Files).Distinct().Count(),
-                        Lines = totals.Select(p => p.Lines).Sum(p => p)
+                        Files = authorCommitsByDate.Select(f => f.Files).Distinct().Count(),
+                        Lines = authorCommitsByDate.Select(p => p.Lines).Sum(p => p)
                     }
                 };
             }).ToList();
             pbar?.Dispose();
+
 
             // Merge author records where name matches mailmap.validate
             var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g =>
@@ -146,6 +158,18 @@ public static class Work
                     Author = g.Key,
                     Project = options.Path,
                     Commits = g.SelectMany(a => a.Commits).ToList(),
+                    TotalsByDate = g.SelectMany(a => a.TotalsByDate).GroupBy(a => a.Date).Select(g =>
+                    {
+                        return new Totals
+                        {
+                            Date = g.Key,
+                            Files = g.Sum(a => a.Files),
+                            Lines = g.Sum(a => a.Lines),
+                            LinesAdded = g.Sum(a => a.LinesAdded),
+                            LinesDeleted = g.Sum(a => a.LinesDeleted),
+                            Commits = g.Sum(a => a.Commits)
+                        };
+                    }).ToList(),
                     Totals = new Totals
                     {
                         Commits = g.Sum(a => a.Totals.Commits),
@@ -155,7 +179,7 @@ public static class Work
                 };
             }).OrderByDescending(a => a.Totals.Lines);
 
-            if (options.Format == global::Format.Table)
+            if (options.Format == global::Format.Table && !options.ByDay)
             {
 
                 var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
@@ -172,6 +196,40 @@ public static class Work
                     table.AddRow("Project Totals", mergedAuthorContribs.Sum(a => a.Totals.Files).ToString("N0"), mergedAuthorContribs.Sum(a => a.Totals.Commits).ToString("N0"), mergedAuthorContribs.Sum(a => a.Totals.Lines).ToString("N0"));
                 }
                 table.Write();
+            }
+            else if (options.Format == global::Format.Table && options.ByDay)
+            {
+                // List of dates from uniqueCommits first and last commit dates
+                var dateRange = Enumerable.Range(0, 1 + options.ToDate.Subtract(options.FromDate).Days).Select(offset => DateOnly.FromDateTime(options.FromDate.AddDays(offset).DateTime)).ToList();
+                string[] baseColumns = ["Author"];
+                var columns = baseColumns.Concat(dateRange.Select(d => d.ToString("MM/dd")).ToList()).ToList();
+                columns.Add("Total");
+
+                var table = new ConsoleTable(columns.ToArray());
+                table.Options.EnableCount = false;
+                Console.WriteLine("Date Range: " + options.FromDate.ToString("MM/dd/yyyy") + " - " + options.ToDate.ToString("MM/dd/yyyy"));
+                Console.WriteLine("First Commit: " + uniqueCommits.FirstOrDefault()?.Committer.When ?? "");
+                Console.WriteLine("Last Commit: " + uniqueCommits.LastOrDefault()?.Committer.When ?? "");
+                foreach (var author in mergedAuthorContribs)
+                {
+                    var values = new List<string>
+                    {
+                        author.Author
+                    }.Concat(dateRange.Select(d => author.TotalsByDate.FirstOrDefault(t => t.Date == d) ?? new Totals()).Select(x => x.Lines.ToString("N0")).ToList()).ToList();
+                    values.Add(author.Totals.Lines.ToString("N0"));
+                    table.AddRow(values.ToArray());
+                }
+                if (options.ShowSummary)
+                {
+                    var values = new List<string>
+                    {
+                        "Project Totals"
+                    }.Concat(dateRange.Select(d => mergedAuthorContribs.SelectMany(a => a.TotalsByDate).Where(t => t.Date == d).Sum(t => (long?)t.Lines) ?? 0).Select(x => x.ToString("N0"))).ToList();
+                    values.Add(mergedAuthorContribs.Sum(a => a.Totals.Lines).ToString("N0"));
+                    table.AddRow(values.ToArray());
+                }
+                table.Write();
+
             }
             else if (options.Format == global::Format.Json)
             {

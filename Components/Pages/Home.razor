@@ -124,7 +124,7 @@
         {
             uniqueAuthors = uniqueAuthors.Where(x => SelectedAuthors.Contains(x)).ToList();
         }
-        if(Authors.Count() == 0)
+        if (Authors.Count() == 0)
         {
             Authors = uniqueAuthors;
         }
