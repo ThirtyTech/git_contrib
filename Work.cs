@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reactive.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -200,35 +201,14 @@ public static class Work
             else if (options.Format == global::Format.Table && options.ByDay)
             {
                 // List of dates from uniqueCommits first and last commit dates
-                var dateRange = Enumerable.Range(0, 1 + options.ToDate.Subtract(options.FromDate).Days).Select(offset => DateOnly.FromDateTime(options.FromDate.AddDays(offset).DateTime)).ToList();
-                string[] baseColumns = ["Author"];
-                var columns = baseColumns.Concat(dateRange.Select(d => d.ToString("MM/dd")).ToList()).ToList();
-                columns.Add("Total");
-
-                var table = new ConsoleTable(columns.ToArray());
-                table.Options.EnableCount = false;
                 Console.WriteLine("Date Range: " + options.FromDate.ToString("MM/dd/yyyy") + " - " + options.ToDate.ToString("MM/dd/yyyy"));
                 Console.WriteLine("First Commit: " + uniqueCommits.FirstOrDefault()?.Committer.When ?? "");
                 Console.WriteLine("Last Commit: " + uniqueCommits.LastOrDefault()?.Committer.When ?? "");
-                foreach (var author in mergedAuthorContribs)
-                {
-                    var values = new List<string>
-                    {
-                        author.Author
-                    }.Concat(dateRange.Select(d => author.TotalsByDate.FirstOrDefault(t => t.Date == d) ?? new Totals()).Select(x => x.Lines.ToString("N0")).ToList()).ToList();
-                    values.Add(author.Totals.Lines.ToString("N0"));
-                    table.AddRow(values.ToArray());
-                }
-                if (options.ShowSummary)
-                {
-                    var values = new List<string>
-                    {
-                        "Project Totals"
-                    }.Concat(dateRange.Select(d => mergedAuthorContribs.SelectMany(a => a.TotalsByDate).Where(t => t.Date == d).Sum(t => (long?)t.Lines) ?? 0).Select(x => x.ToString("N0"))).ToList();
-                    values.Add(mergedAuthorContribs.Sum(a => a.Totals.Lines).ToString("N0"));
-                    table.AddRow(values.ToArray());
-                }
-                table.Write();
+                var dateRange = Enumerable.Range(0, 1 + options.ToDate.Subtract(options.FromDate).Days).Select(offset => DateOnly.FromDateTime(options.FromDate.AddDays(offset).DateTime)).ToList();
+
+                WriteTable(mergedAuthorContribs, dateRange, t => t.Lines, options.ShowSummary);
+                WriteTable(mergedAuthorContribs, dateRange, t => t.Files, options.ShowSummary);
+                WriteTable(mergedAuthorContribs, dateRange, t => t.Commits, options.ShowSummary);
 
             }
             else if (options.Format == global::Format.Json)
@@ -239,6 +219,41 @@ public static class Work
             return mergedAuthorContribs;
 
         }
+    }
+
+    public static void WriteTable(IOrderedEnumerable<AuthorContrib> authorContribs, List<DateOnly> dateRange, Expression<Func<Totals, int>> prop, bool showSummary)
+    {
+        var compiled = prop.Compile();
+        string[] baseColumns = [$"Author ({((MemberExpression)prop.Body).Member.Name})"];
+        var columns = baseColumns.Concat(dateRange.Select(d => d.ToString("MM/dd")).ToList()).ToList();
+        columns.Add("Total");
+
+        var table = new ConsoleTable(columns.ToArray());
+        table.Options.EnableCount = false;
+        foreach (var author in authorContribs)
+        {
+            var values = new List<string>
+                    {
+                        author.Author
+                    }.Concat(dateRange.Select(d => author.TotalsByDate.FirstOrDefault(t => t.Date == d) ?? new Totals()).Select(x =>
+                    {
+                        // return $"{x.Lines:N0} / {x.Files:N0} / {x.Commits:N0}";
+                        return $"{compiled(x):N0}";
+                    }).ToList()).ToList();
+            values.Add(compiled(author.Totals).ToString("N0"));
+            table.AddRow(values.ToArray());
+        }
+        if (showSummary)
+        {
+            var values = new List<string>
+                    {
+                        "Project Totals"
+                    }.Concat(dateRange.Select(d => authorContribs.SelectMany(a => a.TotalsByDate).Where(t => t.Date == d).Sum(t => (long?)compiled(t)) ?? 0).Select(x => x.ToString("N0"))).ToList();
+            values.Add(authorContribs.Sum(a => compiled(a.Totals)).ToString("N0"));
+            table.AddRow(values.ToArray());
+        }
+        table.Write();
+
     }
 
 }
