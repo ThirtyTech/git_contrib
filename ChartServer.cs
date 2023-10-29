@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Services;
 
 public static class ChartServer
@@ -26,7 +25,7 @@ public static class ChartServer
             app.UseHsts();
         }
 
-        app.UseStaticFiles();
+        app.UseStaticFiles(Directory.GetCurrentDirectory());
 
         app.UseRouting();
         app.MapControllers();

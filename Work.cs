@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reactive.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using ConsoleTables;
 using LibGit2Sharp;
 using ShellProgressBar;
