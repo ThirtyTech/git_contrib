@@ -55,7 +55,8 @@
 
   <!-- Check if running on locally -->
   <Target Name="CopyFilesToWwwroot" AfterTargets="Build"
-    Condition="'$(IsRunningOnGitHubActions)' != 'true'"> > <ItemGroup>
+    Condition="'$(IsRunningOnGitHubActions)' != 'true'">
+    <ItemGroup>
       <PublishedFiles
         Include="$(MSBuildProjectDirectory)/bin/Release/net8.0/linux-x64/publish/wwwroot/**/*.*" />
     </ItemGroup>
