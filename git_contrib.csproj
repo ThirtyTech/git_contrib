@@ -48,9 +48,28 @@
     <RemoveDir Directories="@(FluentValidationExcludedCultures->'$(OutputPath)%(Filename)')" />
   </Target>
 
-  <Target Name="CopyFilesToWwwroot" AfterTargets="Build">
+  <!-- Check if running on GitHub Actions -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <IsRunningOnGitHubActions>true</IsRunningOnGitHubActions>
+  </PropertyGroup>
+
+  <!-- Check if running on locally -->
+  <Target Name="CopyFilesToWwwroot" AfterTargets="Build"
+    Condition="'$(IsRunningOnGitHubActions)' != 'true'"> > <ItemGroup>
+      <PublishedFiles
+        Include="$(MSBuildProjectDirectory)/bin/Release/net8.0/linux-x64/publish/wwwroot/**/*.*" />
+    </ItemGroup>
+    <Copy
+      DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\MudBlazor\%(PublishedFiles.RecursiveDir)"
+      SourceFiles="@(PublishedFiles)" />
+  </Target>
+
+  <!-- Check if running on GitHub Actions -->
+  <Target Name="CopyFilesToWwwroot" AfterTargets="Build"
+    Condition="'$(IsRunningOnGitHubActions)' == 'true'">
     <ItemGroup>
-      <PublishedFiles Include="$(MSBuildProjectDirectory)/bin/Release/net8.0/linux-x64/publish/wwwroot/**/*.*" />
+      <PublishedFiles
+        Include="$(MSBuildProjectDirectory)/published/wwwroot/**/*.*" />
     </ItemGroup>
     <Copy
       DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\MudBlazor\%(PublishedFiles.RecursiveDir)"
