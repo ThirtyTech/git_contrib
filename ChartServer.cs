@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileProviders;
 using MudBlazor.Services;
 
 public static class ChartServer
@@ -25,7 +26,11 @@ public static class ChartServer
             app.UseHsts();
         }
 
-        app.UseStaticFiles(Directory.GetCurrentDirectory());
+        // app.UseStaticFiles(Directory.GetCurrentDirectory());
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new EmbeddedFileProvider(assembly: typeof(ChartServer).Assembly, baseNamespace: "git_contrib.wwwroot"),
+        });
 
         app.UseRouting();
         app.MapControllers();

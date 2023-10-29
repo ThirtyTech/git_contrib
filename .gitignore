@@ -410,3 +410,4 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 Examples/config.json
+wwwroot/MudBlazor/
