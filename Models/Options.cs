@@ -12,6 +12,7 @@ public class Options
             FromDate = Utils.TryParseHumanReadableDateTimeOffset(options.FromDate, out var _fromDate) ? _fromDate : DateTimeOffset.MinValue,
             ToDate = Utils.TryParseHumanReadableDateTimeOffset(options.ToDate, out var _toDate) ? _toDate : DateTimeOffset.Now,
             Path = options.Path,
+            ByDay = options.ByDay,
             Mailmap = options.Mailmap,
             Format = options.Format,
             IgnoreAuthors = options.IgnoreAuthors,
@@ -58,6 +59,7 @@ public class ConfigOptions
 
     }
     public string FromDate { get; set; } = "";
+    public bool ByDay { get; set; } = false;
     public string ToDate { get; set; } = "";
     public string Path { get; set; } = "";
     public string Mailmap { get; set; } = "";
