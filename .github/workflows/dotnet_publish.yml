@@ -55,9 +55,9 @@ jobs:
     - name: Install GitHub CLI
       run: |
         sudo apt update
-        sudo apt install wget
+        sudo apt install wget git
         wget https://github.com/cli/cli/releases/download/v2.37.0/gh_2.37.0_linux_amd64.deb
-        sudo dkpg -i gh_2.37.0_linux_amd64.deb
+        sudo dpkg  -i gh_2.37.0_linux_amd64.deb
 
     - name: Create GitHub Release and upload artifacts
       run: |
