@@ -133,8 +133,6 @@ public static class Work
 
                 pbar?.Tick();
 
-                Console.WriteLine(JsonSerializer.Serialize(authorCommitsByDate.Select(f => f.Files)));
-
                 return new AuthorContrib
                 {
                     Author = author.Key,
