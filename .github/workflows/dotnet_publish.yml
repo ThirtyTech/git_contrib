@@ -69,7 +69,7 @@ jobs:
                   gh release create ${{github.run_number}} \
                     --title "Release ${{ github.run_number }}" \
                     --repo ${{ github.repository }} \
-                    --notes "Pre-built binaries for for several major platforms. If your platform is not listed, please open an issue or build from source."
+                    --notes "Pre-built binaries for several major platforms. If your platform is not listed, please open an issue or build from source."
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Upload artifacts to the release
