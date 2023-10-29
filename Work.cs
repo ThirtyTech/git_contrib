@@ -133,6 +133,8 @@ public static class Work
 
                 pbar?.Tick();
 
+                Console.WriteLine(JsonSerializer.Serialize(authorCommitsByDate.Select(f => f.Files)));
+
                 return new AuthorContrib
                 {
                     Author = author.Key,
@@ -142,7 +144,7 @@ public static class Work
                     Totals = new Totals
                     {
                         Commits = author.Count(),
-                        Files = authorCommitsByDate.Select(f => f.Files).Distinct().Count(),
+                        Files = authorCommitsByDate.Select(f => f.Files).Sum(f => f),
                         Lines = authorCommitsByDate.Select(p => p.Lines).Sum(p => p)
                     }
                 };
