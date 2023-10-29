@@ -6,14 +6,14 @@
 @inject Options Options
 
 <MudThemeProvider IsDarkMode />
- <MudDialogProvider />
- <MudSnackbarProvider />
- <PageTitle>Home</PageTitle>
+<MudDialogProvider />
+<MudSnackbarProvider />
+<PageTitle>Home</PageTitle>
 
- <MudContainer MaxWidth="MaxWidth.ExtraLarge" class="mt-10">
-     <div class="flex gap-8">
-         <MudSelect T="string" Label="Authors" MultiSelection="true" SelectedValues="@SelectedAuthors" class="flex-1"
-             SelectedValuesChanged="UpdateAuthors" SelectAll>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" class="mt-10">
+    <div class="flex gap-8">
+        <MudSelect T="string" Label="Authors" MultiSelection="true" SelectedValues="@SelectedAuthors" class="flex-1"
+            SelectedValuesChanged="UpdateAuthors" SelectAll>
             @foreach (var author in Authors)
             {
                 <MudSelectItem Value="@author">@author</MudSelectItem>
@@ -99,27 +99,20 @@
 
         var days = (ToDate - FromDate).Days + 1;
         XAxisLabels = Enumerable.Range(0, days).Select(i => FromDate.AddDays(i).ToString("MM/dd")).ToArray();
+        var results = Work.DoWork(new Options
+            {
 
-        var rangeResults = (await Observable.Range(0, days)
-        .Select(i => Observable.Start(() =>
-        {
-            var result = Work.DoWork(new Options
-                {
-                    Fetch = false,
-                    FromDate = FromDate.AddDays(i).Date,
-                    ToDate = FromDate.AddDays(i + 1).Date,
-                    Path = Options.Path,
-                    Mailmap = Options.Mailmap,
-                    IgnoreAuthors = Options.IgnoreAuthors,
-                    IgnoreFiles = Options.IgnoreFiles,
-                    Format = global::Format.None
-                });
-            return (i, result);
-        }))
-        .Merge(Environment.ProcessorCount - 1).ToList())
-        .OrderBy(x => x.i).ToList();
+                Fetch = false,
+                FromDate = FromDate.Date,
+                ToDate = ToDate.Date,
+                Path = Options.Path,
+                Mailmap = Options.Mailmap,
+                IgnoreAuthors = Options.IgnoreAuthors,
+                IgnoreFiles = Options.IgnoreFiles,
+                Format = global::Format.None
+            });
 
-        var uniqueAuthors = rangeResults.SelectMany(x => x.result).Select(x => x.Author).Distinct().ToList();
+        var uniqueAuthors = results.Select(x => x.Author).Distinct().ToList();
         if (SelectedAuthors.Count() > 0)
         {
             uniqueAuthors = uniqueAuthors.Where(x => SelectedAuthors.Contains(x)).ToList();
@@ -129,11 +122,14 @@
             Authors = uniqueAuthors;
         }
 
+        var dateRange = Enumerable.Range(0, 1 + ToDate.Subtract(FromDate).Days).Select(offset =>
+        DateOnly.FromDateTime(FromDate.AddDays(offset).Date)).ToList();
+
         LinesOfCode = uniqueAuthors.Select(author =>
         {
-            var data = Enumerable.Range(0, days).Select(i =>
+            var data = dateRange.Select(d =>
     {
-    var num = rangeResults[i].result.FirstOrDefault(x => x.Author == author)?.Totals.Lines;
+    var num = results.FirstOrDefault(x => x.Author == author)?.TotalsByDate.Where(x => x.Date == d).Sum(x => x.Lines);
     return num ?? 0d;
             }).ToArray();
 
@@ -146,9 +142,9 @@
 
         Files = uniqueAuthors.Select(author =>
         {
-            var data = Enumerable.Range(0, days).Select(i =>
+            var data = dateRange.Select(d =>
     {
-    var num = rangeResults[i].result.FirstOrDefault(x => x.Author == author)?.Totals.Files;
+    var num = results.FirstOrDefault(x => x.Author == author)?.TotalsByDate.Where(x => x.Date == d).Sum(x => x.Files);
     return num ?? 0d;
             }).ToArray();
             return new ChartSeries
@@ -160,9 +156,9 @@
 
         Commits = uniqueAuthors.Select(author =>
         {
-            var data = Enumerable.Range(0, days).Select(i =>
+            var data = dateRange.Select(d =>
     {
-    var num = rangeResults[i].result.FirstOrDefault(x => x.Author == author)?.Totals.Commits;
+    var num = results.FirstOrDefault(x => x.Author == author)?.TotalsByDate.Where(x => x.Date == d).Sum(x => x.Commits);
     return num ?? 0d;
             }).ToArray();
             return new ChartSeries
