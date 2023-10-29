@@ -1,6 +1,7 @@
 name: Build, Publish, and Release .NET Core App
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'  # Trigger this workflow when you push a new tag starting with 'v', e.g., 'v1.0.0'
