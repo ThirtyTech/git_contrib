@@ -67,7 +67,7 @@ jobs:
     - name: Create GitHub Release and upload artifacts
       run: |
         # Create a release
-        gh release create HEAD \
+        gh release create ${{github.run_number}} \
           --title "Release ${{ github.ref }}" \
           --repo ${{ github.repository }} \
           --notes "Release of ${{ github.ref }}"
@@ -78,7 +78,7 @@ jobs:
         shopt -s globstar
         for artifact in artifacts/**; do
             if [[ -f "$artifact" ]]; then  # Check if it's a file and not a directory
-                gh release upload ${{ github.ref }} "$artifact" --repo ${{ github.repository }}
+                gh release upload ${{ github.run_number }} "$artifact" --repo ${{ github.repository }}
             fi
         done
       env:
