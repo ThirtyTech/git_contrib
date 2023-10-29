@@ -109,7 +109,7 @@ public static class Work
             // Loop through each group of commits by author
             var authorContribs = uniqueCommitsGroupedByAuthor
             .AsParallel()
-            .WithDegreeOfParallelism(1)
+            .WithDegreeOfParallelism(MaxConcurrency)
             .Select(author =>
             {
                 // Group Author commits by DateOnly
