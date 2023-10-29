@@ -19,20 +19,20 @@
                 <MudSelectItem Value="@author">@author</MudSelectItem>
             }
         </MudSelect>
-        <MudDatePicker class="flex-none" Label="From Date" Date="FromDate" DateChanged="@(async(date) => {
+        <MudDatePicker class="flex-none" Label="From Date" Date="FromDate" DateChanged="@((date) => {
         if (date.HasValue)
         {
             FromDate = date.Value;
-            await UpdateAuthors(SelectedAuthors);
+            UpdateAuthors(SelectedAuthors);
         }
 
         })" />
-        <MudDatePicker class="flex-none" Label="To Date" Date="ToDate" DateChanged="@(async(date) => {
+        <MudDatePicker class="flex-none" Label="To Date" Date="ToDate" DateChanged="@((date) => {
 
         if (date.HasValue)
         {
             ToDate = date.Value;
-            await UpdateAuthors(SelectedAuthors);
+            UpdateAuthors(SelectedAuthors);
         }
         })" />
 
@@ -83,19 +83,19 @@
             YAxisTicks = 1
         };
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
+        base.OnInitialized();
         var days = (DateTime.Now - Options.FromDate).Days;
         FromDate = Options.FromDate.Date;
         ToDate = Options.ToDate.Date;
 
-        await UpdateAuthors(Array.Empty<string>());
+        UpdateAuthors(Array.Empty<string>());
     }
 
-    public async Task UpdateAuthors(IEnumerable<string> authors)
+    public void UpdateAuthors(IEnumerable<string> authors)
     {
         SelectedAuthors = authors;
-        @* await test.CloseMenu(); *@
 
         var days = (ToDate - FromDate).Days + 1;
         XAxisLabels = Enumerable.Range(0, days).Select(i => FromDate.AddDays(i).ToString("MM/dd")).ToArray();
