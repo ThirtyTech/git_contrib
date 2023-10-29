@@ -30,11 +30,11 @@ jobs:
               run: dotnet build --configuration Release --no-restore
 
             - name: Publish
-              run: dotnet publish --project git_contrib.csproj --configuration Release --no-restore --output ./published
+              run: dotnet publish git_contrib.csproj --configuration Release --no-restore --output ./published
 
             # Double publish is needed for including build wwwroot folder files.
             - name: Publish
-              run: dotnet publish --project git_contrib.csproj --configuration Release --no-restore --output ./published
+              run: dotnet publish git_contrib.csproj --configuration Release --no-restore --output ./published
 
             - name: Rename published artifact with OS suffix
               if: matrix.os != 'windows-latest'
