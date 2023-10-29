@@ -75,7 +75,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Upload artifacts to the release
       run: |
-        shopt -s globalstar
+        shopt -s globstar
         for artifact in artifacts/**; do
             if [[ -f "$artifact" ]]; then  # Check if it's a file and not a directory
                 gh release upload ${{ github.ref }} "$artifact" --repo ${{ github.repository }}
