@@ -40,7 +40,7 @@ jobs:
     - name: Upload published artifacts temporarily
       uses: actions/upload-artifact@v3
       with:
-        name: published-${{ matrix.os }}
+        name: git_contrib_${{ matrix.os }}
         path: ./published/git_contrib*
 
   create-release:
