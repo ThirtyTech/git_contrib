@@ -1,85 +1,84 @@
 name: Build, Publish, and Release .NET Core App
 
 on:
-  workflow_dispatch:
-  push:
-    tags:
-      - 'v*'  # Trigger this workflow when you push a new tag starting with 'v', e.g., 'v1.0.0'
+    workflow_dispatch:
+    push:
+        tags:
+            - "v*" # Trigger this workflow when you push a new tag starting with 'v', e.g., 'v1.0.0'
 
 jobs:
-  build-and-publish:
-    name: Build and Publish for ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    build-and-publish:
+        name: Build and Publish for ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0'
-        dotnet-quality: 'preview'
+            - name: Setup .NET Core
+              uses: actions/setup-dotnet@v3
+              with:
+                  dotnet-version: "8.0"
+                  dotnet-quality: "preview"
 
+            - name: Restore dependencies
+              run: dotnet restore
 
-    - name: Restore dependencies
-      run: dotnet restore
+            - name: Build
+              run: dotnet build --configuration Release --no-restore
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+            - name: Publish
+              run: dotnet publish --configuration Release --no-restore --output ./published
 
-    - name: Publish
-      run: dotnet publish --configuration Release --no-restore --output ./published
+            # Double publish is needed for including build wwwroot folder files.
+            - name: Publish
+              run: dotnet publish --configuration Release --no-restore --output ./published
 
-    # Double publish is needed for including build wwwroot folder files.
-    - name: Publish
-      run: dotnet publish --configuration Release --no-restore --output ./published
+            - name: Rename published artifact with OS suffix
+              if: matrix.os != 'windows-latest'
+              run: |
+                  cd ./published
+                  mv git_contrib git_contrib_${{ matrix.os }}
+            - name: Upload published artifacts temporarily
+              uses: actions/upload-artifact@v3
+              with:
+                  name: git_contrib_${{ matrix.os }}
+                  path: ./published/git_contrib*
 
-    - name: Rename published artifact with OS suffix
-      if: matrix.os != 'windows-latest'
-      run: |
-          cd ./published
-          mv git_contrib git_contrib_${{ matrix.os }}
-    - name: Upload published artifacts temporarily
-      uses: actions/upload-artifact@v3
-      with:
-        name: git_contrib_${{ matrix.os }}
-        path: ./published/git_contrib*
+    create-release:
+        needs: build-and-publish
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download all artifacts
+              uses: actions/download-artifact@v3
+              with:
+                  path: artifacts
 
-  create-release:
-    needs: build-and-publish
-    runs-on: ubuntu-latest
-    steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v3
-      with:
-        path: artifacts
+            - name: Install GitHub CLI
+              run: |
+                  sudo apt update
+                  sudo apt install wget git
+                  wget https://github.com/cli/cli/releases/download/v2.37.0/gh_2.37.0_linux_amd64.deb
+                  sudo dpkg  -i gh_2.37.0_linux_amd64.deb
 
-    - name: Install GitHub CLI
-      run: |
-        sudo apt update
-        sudo apt install wget git
-        wget https://github.com/cli/cli/releases/download/v2.37.0/gh_2.37.0_linux_amd64.deb
-        sudo dpkg  -i gh_2.37.0_linux_amd64.deb
-
-    - name: Create GitHub Release and upload artifacts
-      run: |
-        # Create a release
-        gh release create ${{github.run_number}} \
-          --title "Release ${{ github.ref }}" \
-          --repo ${{ github.repository }} \
-          --notes "Release of ${{ github.ref }}"
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Upload artifacts to the release
-      run: |
-        shopt -s globstar
-        for artifact in artifacts/**; do
-            if [[ -f "$artifact" ]]; then  # Check if it's a file and not a directory
-                gh release upload ${{ github.run_number }} "$artifact" --repo ${{ github.repository }}
-            fi
-        done
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Create GitHub Release and upload artifacts
+              run: |
+                  # Create a release
+                  gh release create ${{github.run_number}} \
+                    --title "Release ${{ github.run_number }}" \
+                    --repo ${{ github.repository }} \
+                    --notes "Pre-built binaries for for several major platforms. If your platform is not listed, please open an issue or build from source."
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Upload artifacts to the release
+              run: |
+                  shopt -s globstar
+                  for artifact in artifacts/**; do
+                      if [[ -f "$artifact" ]]; then  # Check if it's a file and not a directory
+                          gh release upload ${{ github.run_number }} "$artifact" --repo ${{ github.repository }}
+                      fi
+                  done
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
