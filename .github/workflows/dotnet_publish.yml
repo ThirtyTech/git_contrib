@@ -37,6 +37,11 @@ jobs:
     - name: Publish
       run: dotnet publish --configuration Release --no-restore --output ./published
 
+    - name: Rename published artifact with OS suffix
+      if: matrix.os != 'windows-latest'
+      run: |
+          cd ./published
+          mv git_contrib git_contrib_${{ matrix.os }}
     - name: Upload published artifacts temporarily
       uses: actions/upload-artifact@v3
       with:
@@ -71,7 +76,9 @@ jobs:
     - name: Upload artifacts to the release
       run: |
         for artifact in artifacts/*; do
-            gh release upload HEAD "$artifact" --repo ${{ github.repository }}
+            if [[ -f "$artifact" ]]; then  # Check if it's a file and not a directory
+                gh release upload ${{ github.ref }} "$artifact" --repo ${{ github.repository }}
+            fi
         done
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
