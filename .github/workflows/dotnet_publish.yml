@@ -34,7 +34,6 @@ jobs:
               run: |
                   dotnet publish git_contrib.csproj --configuration Release --no-restore --output ./published
                   dotnet publish git_contrib.csproj --configuration Release --no-restore --output ./published
-                  dotnet publish git_contrib.csproj --configuration Release --no-restore --output ./published
 
             - name: Rename published artifact with OS suffix
               if: matrix.os != 'windows-latest'

@@ -54,7 +54,7 @@
   </PropertyGroup>
 
   <!-- Check if running on locally -->
-  <Target Name="CopyFilesToWwwroot" AfterTargets="Build"
+  <Target Name="CopyFilesToWwwroot" AfterTargets="Publish"
     Condition="'$(IsRunningOnGitHubActions)' != 'true'">
     <ItemGroup>
       <PublishedFiles
@@ -66,7 +66,7 @@
   </Target>
 
   <!-- Check if running on GitHub Actions -->
-  <Target Name="CopyFilesToWwwroot" AfterTargets="Build"
+  <Target Name="CopyFilesToWwwroot" AfterTargets="Publish"
     Condition="'$(IsRunningOnGitHubActions)' == 'true'">
     <ItemGroup>
       <PublishedFiles

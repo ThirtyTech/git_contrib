@@ -411,3 +411,4 @@ FodyWeavers.xsd
 *.sln.iml
 Examples/config.json
 wwwroot/MudBlazor/
+published/
