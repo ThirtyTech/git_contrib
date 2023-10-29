@@ -41,7 +41,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: published-${{ matrix.os }}
-        path: ./published/
+        path: ./published/git_contrib*
 
   create-release:
     needs: build-and-publish
