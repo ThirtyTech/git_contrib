@@ -37,6 +37,7 @@ var root = new RootCommand {
             IgnoreFiles,
             ByDay
         };
+root.Description = "Git Contrib gives statistics by authors to the project.";
 
 var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config file", parse: (result) =>
 {
