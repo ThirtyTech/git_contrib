@@ -61,7 +61,7 @@ var Plot = new Command("plot", "Plot the results of the analysis")
 var Chart = new Command("chart", "Launch interactive server to view results") { Path, IgnoreAuthors, FromDate, ToDate, Mailmap, IgnoreFiles };
 
 root.AddCommand(Config);
-root.AddCommand(Plot);
+// root.AddCommand(Plot);
 root.AddCommand(Chart);
 
 root.SetHandler((context) =>
