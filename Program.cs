@@ -1,8 +1,11 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
+using System.Reflection;
 // using LibGit2Sharp;
 // GlobalSettings.NativeLibraryPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libgit2-e632535.so");
+
+var Version = new Option<bool>("--version", "Show the version information and exit");
 
 var Path = new Argument<string>("path", description: "Path to search for git repositories", getDefaultValue: Directory.GetCurrentDirectory);
 var FromDate = new Option<DateTimeOffset?>("--from", description: "Starting date for commits to be considered",
@@ -26,7 +29,8 @@ var ShowSummary = new Option<bool>("--show-summary", description: "Show project 
 var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore") { AllowMultipleArgumentsPerToken = true };
 var IgnoreFiles = new Option<string[]>("--ignore-files", description: "Files to ignore") { AllowMultipleArgumentsPerToken = true };
 
-var root = new RootCommand {
+var root = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version} gives statistics by authors to the project.") {
+            Version,
             FromDate,
             ToDate,
             Path,
@@ -37,7 +41,6 @@ var root = new RootCommand {
             IgnoreFiles,
             ByDay
         };
-root.Description = "Git Contrib gives statistics by authors to the project.";
 
 var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config file", parse: (result) =>
 {
@@ -66,6 +69,11 @@ root.AddCommand(Chart);
 
 root.SetHandler((context) =>
 {
+    if (context.ParseResult.GetValueForOption(Version))
+    {
+        Console.WriteLine($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version}");
+        return;
+    }
     var options = new Options
     {
         FromDate = context.ParseResult.GetValueForOption(FromDate) ?? DateTimeOffset.MinValue,
