@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <OutputType>Exe</OutputType>
     <SelfContained>true</SelfContained>
     <TargetFramework>net8.0</TargetFramework>
@@ -17,11 +17,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConsoleTables" Version="2.5.0" />
+    <!-- <TrimmerRootAssembly Include="Microsoft.AspNetCore.Components" /> -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ConsoleTables" Version="2.6.1" />
     <PackageReference Include="libgit2sharp" Version="0.27.2" />
     <PackageReference Include="Libgit2sharp.nativebinaries" Version="2.0.320" />
     <PackageReference Include="Mapster" Version="7.4.0" />
-    <PackageReference Include="MudBlazor" Version="6.10.0" />
+    <PackageReference Include="MudBlazor" Version="6.11.0" />
     <PackageReference Include="ShellProgressBar" Version="5.2.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.6" />
     <PackageReference Include="System.Commandline" Version="2.0.0-beta4.22272.1" />
@@ -35,8 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FluentValidationExcludedCultures
-      Include="de;es;fr;it;ja;ko;ru;tr;cl;cs;pl;pt-BR;zh-Hans;zh-Hant;Properties">
+    <FluentValidationExcludedCultures Include="de;es;fr;it;ja;ko;ru;tr;cl;cs;pl;pt-BR;zh-Hans;zh-Hant;Properties">
       <InProject>false</InProject>
     </FluentValidationExcludedCultures>
   </ItemGroup>
@@ -55,26 +58,18 @@
   </PropertyGroup>
 
   <!-- Check if running on locally -->
-  <Target Name="CopyFilesToWwwroot" AfterTargets="Publish"
-    Condition="'$(IsRunningOnGitHubActions)' != 'true'">
+  <Target Name="CopyFilesToWwwroot" AfterTargets="Publish" Condition="'$(IsRunningOnGitHubActions)' != 'true'">
     <ItemGroup>
-      <PublishedFiles
-        Include="$(MSBuildProjectDirectory)/bin/Release/net8.0/linux-x64/publish/wwwroot/**/*.*" />
+      <PublishedFiles Include="$(MSBuildProjectDirectory)/bin/Release/net8.0/linux-x64/publish/wwwroot/**/*.*" />
     </ItemGroup>
-    <Copy
-      DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\MudBlazor\%(PublishedFiles.RecursiveDir)"
-      SourceFiles="@(PublishedFiles)" />
+    <Copy DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\MudBlazor\%(PublishedFiles.RecursiveDir)" SourceFiles="@(PublishedFiles)" />
   </Target>
 
   <!-- Check if running on GitHub Actions -->
-  <Target Name="CopyFilesToWwwroot" AfterTargets="Publish"
-    Condition="'$(IsRunningOnGitHubActions)' == 'true'">
+  <Target Name="CopyFilesToWwwroot" AfterTargets="Publish" Condition="'$(IsRunningOnGitHubActions)' == 'true'">
     <ItemGroup>
-      <PublishedFiles
-        Include="$(MSBuildProjectDirectory)/published/wwwroot/**/*.*" />
+      <PublishedFiles Include="$(MSBuildProjectDirectory)/published/wwwroot/**/*.*" />
     </ItemGroup>
-    <Copy
-      DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\MudBlazor\%(PublishedFiles.RecursiveDir)"
-      SourceFiles="@(PublishedFiles)" />
+    <Copy DestinationFolder="$(MSBuildProjectDirectory)\wwwroot\MudBlazor\%(PublishedFiles.RecursiveDir)" SourceFiles="@(PublishedFiles)" />
   </Target>
 </Project>
