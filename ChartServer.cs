@@ -10,8 +10,6 @@ public static class ChartServer
 
         builder.Services.AddSingleton(options);
 
-        builder.Services.AddControllers();
-
         builder.Services
         .AddMudServices()
         .AddRazorComponents()
@@ -21,9 +19,7 @@ public static class ChartServer
 
         if (!app.Environment.IsDevelopment())
         {
-            app.UseExceptionHandler("/Error");
-            // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            app.UseHsts();
+            app.UseExceptionHandler("/Error", createScopeForErrors: true);
         }
 
         // app.UseStaticFiles(Directory.GetCurrentDirectory());
@@ -32,8 +28,6 @@ public static class ChartServer
             FileProvider = new EmbeddedFileProvider(assembly: typeof(ChartServer).Assembly, baseNamespace: "git_contrib.wwwroot"),
         });
 
-        app.UseRouting();
-        app.MapControllers();
         app.UseAntiforgery();
 
         app.MapRazorComponents<git_contrib.Components.App>().AddInteractiveServerRenderMode();

@@ -5,20 +5,15 @@
     <SelfContained>true</SelfContained>
     <TargetFramework>net8.0</TargetFramework>
     <PublishSingleFile>true</PublishSingleFile>
-    <!-- <PublishTrimmed>true</PublishTrimmed> -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishTrimmed>false</PublishTrimmed>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
-    <NoWarn>1591,IL2026,IL2104</NoWarn>
     <DebugType>embedded</DebugType>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-    <!-- <DefaultItemExcludes>wwwroot/**</DefaultItemExcludes> -->
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- <TrimmerRootAssembly Include="Microsoft.AspNetCore.Components" /> -->
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ConsoleTables" Version="2.6.1" />
