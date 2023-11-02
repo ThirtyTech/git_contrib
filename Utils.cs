@@ -1,6 +1,20 @@
-
 public static class Utils
 {
+    public static string FindNearestGitDirectory(string startPath)
+    {
+        DirectoryInfo? dir = new DirectoryInfo(startPath);
+
+        while (dir != null)
+        {
+            if (Directory.Exists(System.IO.Path.Combine(dir.FullName, ".git")))
+            {
+                return dir.FullName;  // Return the directory containing the .git directory
+            }
+            dir = dir.Parent;
+        }
+
+        return String.Empty;
+    }
     public static bool TryParseHumanReadableDateTimeOffset(string input, out DateTimeOffset dateTimeOffset)
     {
         dateTimeOffset = default;

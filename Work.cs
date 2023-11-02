@@ -41,7 +41,7 @@ public static class Work
             Console.WriteLine("Processing directory: " + options.Path);
         }
         // Making commit for the same of it here
-        using (var repo = new Repository(options.Path))
+        using (var repo = new Repository(Utils.FindNearestGitDirectory(options.Path)))
         {
             if (options.Fetch && repo.Network.Remotes.Count() > 0)
             {
