@@ -1,3 +1,7 @@
+<p align="center">
+<img src="./Assets/git_contrib_logo.jpg" width="250" />
+</center>
+
 # Git Contrib
 
 The goal of this project is to give project owners insights into efforts contributed by authors.
