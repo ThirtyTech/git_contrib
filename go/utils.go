@@ -9,10 +9,7 @@ import (
 
 func findNextMonday() time.Time {
 	today := time.Now()
-	daysUntilMonday := (7 - int(today.Weekday()) + 1) % 7
-	// if daysUntilMonday == 0 { // If today is Monday, get the next Monday
-	//     daysUntilMonday = 7
-	// }
+	daysUntilMonday := (-7 - int(today.Weekday()) + 1) % 7
 	nextMonday := today.AddDate(0, 0, daysUntilMonday)
 	return nextMonday
 }

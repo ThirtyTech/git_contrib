@@ -17,7 +17,7 @@ import (
 )
 
 // ChangeSet stores the additions and deletions.
-var debug bool = true
+var debug bool
 
 func run(path string, daysAgo time.Time) error {
 
@@ -31,7 +31,9 @@ func run(path string, daysAgo time.Time) error {
 	var dateMap = arrayToMap(dates)
 
 	gitCmd := "git"
-	gitArgs := []string{"--no-pager", "log", "--all", "--summary", "--numstat", "--mailmap", "--topo-order", "--format=^%C(yellow)%h%C(reset) %C(green)%aI%C(reset) %C(red)%aN <%ae>%C(reset) %gs"}
+	// Print days ago
+	fmt.Println("Days ago:", daysAgo.Format("2006-01-02"))
+	gitArgs := []string{"--no-pager", "log", "--all", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", daysAgo.Format("2006-01-02"), "--format=^%C(yellow)%h%C(reset) %C(green)%aI%C(reset) %C(red)%aN <%aE>%C(reset) %gs"}
 	cmd := exec.Command(gitCmd, gitArgs...)
 
 	//Change Dir
@@ -94,8 +96,7 @@ func run(path string, daysAgo time.Time) error {
 
 			currentDate = strings.Split(parts[1], "T")[0]
 			if !dateMap[currentDate] {
-				// continue
-				break
+				continue
 			}
 
 			// Extract the email part of the author as identifier
@@ -190,6 +191,11 @@ func main() {
 		ignoreFiles   []string
 	)
 
+	debugEnv, exists := os.LookupEnv("DEBUG")
+	if exists {
+		debug, _ = strconv.ParseBool(debugEnv)
+	}
+
 	var rootCmd = &cobra.Command{
 		Use: "git_contrib",
 		Short: `git_contrib [path] gives statistics by authors to the project.
@@ -216,8 +222,6 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 			if toDate == "" {
 				toDate = time.Now().Format(time.RFC3339)
 			}
-
-			fmt.Println(formattedFromDate)
 
 			if !debug {
 				if err := run(path, formattedFromDate); err != nil {
