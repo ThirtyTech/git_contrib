@@ -19,9 +19,12 @@ import (
 // ChangeSet stores the additions and deletions.
 var debug bool
 
-func run(path string, daysAgo time.Time) error {
+func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
+	if toDate > 0 {
+		maxDates = maxDates - toDate - 1
+	}
 	var dates []string
 	for i := 0; i < maxDates; i++ {
 		date := daysAgo.AddDate(0, 0, i+1)
@@ -31,9 +34,10 @@ func run(path string, daysAgo time.Time) error {
 	var dateMap = arrayToMap(dates)
 
 	gitCmd := "git"
-	// Print days ago
-	fmt.Println("Days ago:", daysAgo.Format("2006-01-02"))
-	gitArgs := []string{"--no-pager", "log", "--all", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", daysAgo.Format("2006-01-02"), "--format=^%C(yellow)%h%C(reset) %C(green)%aI%C(reset) %C(red)%aN <%aE>%C(reset) %gs"}
+	gitArgs := []string{"--no-pager", "log", "--all", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", daysAgo.Format("2006-01-02"), "--format=^%h %aI %aN <%aE>"}
+	if toDate > 0 {
+		gitArgs = append(gitArgs, "--until", daysAgo.AddDate(0, 0, toDate).Format("2006-01-02"))
+	}
 	cmd := exec.Command(gitCmd, gitArgs...)
 
 	//Change Dir
@@ -101,10 +105,25 @@ func run(path string, daysAgo time.Time) error {
 
 			// Extract the email part of the author as identifier
 			email := strings.Trim(parts[4], "<>")
+			email = strings.ToLower(email)
 			if _, exists := totals[email]; !exists {
 				totals[email] = &AuthorData{
-					Name:      parts[2] + " " + parts[3],
-					ChangeMap: make(map[string]ChangeSet),
+					Name:  parts[2] + " " + parts[3],
+					Email: email,
+					ChangeMap: map[string]ChangeSet{
+						currentDate: {
+							Commits: 1,
+						},
+					},
+				}
+			} else {
+				if changeSet, ok := totals[email].ChangeMap[currentDate]; ok {
+					changeSet.Commits++
+					totals[email].ChangeMap[currentDate] = changeSet
+				} else {
+					totals[email].ChangeMap[currentDate] = ChangeSet{
+						Commits: 1,
+					}
 				}
 			}
 			currentAuthor = totals[email]
@@ -126,9 +145,11 @@ func run(path string, daysAgo time.Time) error {
 			}
 
 			// Accumulate totals per date for the current author.
-			currentAuthor.ChangeMap[currentDate] = ChangeSet{
-				Additions: currentAuthor.ChangeMap[currentDate].Additions + additions,
-				Deletions: currentAuthor.ChangeMap[currentDate].Deletions + deletions,
+			if changeSet, ok := currentAuthor.ChangeMap[currentDate]; ok {
+				changeSet.Additions += additions
+				changeSet.Deletions += deletions
+				changeSet.Files++
+				currentAuthor.ChangeMap[currentDate] = changeSet
 			}
 		}
 	}
@@ -139,6 +160,43 @@ func run(path string, daysAgo time.Time) error {
 	}
 
 	// Print the totals.
+	// Print the totals in a tabular format.
+	if byDay {
+		printTableByDay(maxDates, daysAgo, totals, dates)
+	} else {
+		printTableTotals(totals)
+	}
+
+	return nil
+}
+
+func printTableTotals(totals map[string]*AuthorData) {
+	fmt.Printf("%-20s", "Aurhor's Name")
+	fmt.Print("\tCommits")
+	fmt.Print("\tFiles")
+	fmt.Print("\tLines")
+	fmt.Println()
+
+	p := message.NewPrinter(language.English)
+
+	for _, authorData := range sortAuthorsByTotalChanges(totals) {
+		fmt.Printf("%-20s", authorData.Name)
+		var totalLines int
+		var totalFiles int
+		var totalCommits int
+		for _, changes := range authorData.ChangeMap {
+			totalChanges := changes.Additions + changes.Deletions
+			totalLines = totalLines + totalChanges
+			totalFiles = totalFiles + changes.Files
+			totalCommits = totalCommits + changes.Commits
+		}
+		p.Printf("\t%d", totalCommits)
+		p.Printf("\t%d", totalFiles)
+		p.Printf("\t%d", totalLines)
+		fmt.Println()
+	}
+}
+func printTableByDay(maxDates int, daysAgo time.Time, totals map[string]*AuthorData, dates []string) {
 	fmt.Printf("%-20s", "Aurhor's Name")
 	for i := 0; i < maxDates; i++ {
 		date := daysAgo.AddDate(0, 0, i+1)
@@ -149,7 +207,6 @@ func run(path string, daysAgo time.Time) error {
 
 	p := message.NewPrinter(language.English)
 
-	// Print the totals in a tabular format.
 	for _, authorData := range sortAuthorsByTotalChanges(totals) {
 		fmt.Printf("%-20s", authorData.Name)
 		var total int
@@ -165,26 +222,14 @@ func run(path string, daysAgo time.Time) error {
 		p.Printf("\t%d", total)
 		fmt.Println()
 	}
-
-	return nil
-}
-
-func getCurrentDirectory() string {
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	return dir
 }
 
 func main() {
 	var (
 		version       bool
 		fromDate      string
-		toDate        string
+		toDate        int
 		byDay         bool
-		mailmap       string
 		format        string
 		showSummary   bool
 		ignoreAuthors []string
@@ -214,30 +259,29 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 				path = args[0]
 			}
 
+			//TODO: Check if path is a valid git directory
+
 			if fromDate == "" {
-				formattedFromDate, _ = TryParseHumanReadableDateTimeOffset("week")
+				// formattedFromDate, _ = TryParseHumanReadableDateTimeOffset("week")
+				// Beginning of time
+				formattedFromDate = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 			} else {
 				formattedFromDate, _ = TryParseHumanReadableDateTimeOffset(fromDate)
 			}
-			if toDate == "" {
-				toDate = time.Now().Format(time.RFC3339)
-			}
 
 			if !debug {
-				if err := run(path, formattedFromDate); err != nil {
+				if err := run(path, formattedFromDate, toDate, byDay); err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n", err)
 					os.Exit(1)
 				}
 			}
-
 		},
 	}
 
 	rootCmd.Flags().BoolVar(&version, "version", false, "Show the version information and exit")
 	rootCmd.Flags().StringVar(&fromDate, "from", "", "Starting date for commits to be considered")
-	rootCmd.Flags().StringVar(&toDate, "to", "", "Ending date for commits to be considered")
+	rootCmd.Flags().IntVar(&toDate, "to", 0, "Ending date for commits to be considered")
 	rootCmd.Flags().BoolVar(&byDay, "by-day", false, "Show results by day")
-	rootCmd.Flags().StringVar(&mailmap, "mailmap", "", "Path to mailmap file")
 	rootCmd.Flags().StringVar(&format, "format", "table", "Format to output results in")
 	rootCmd.Flags().BoolVar(&showSummary, "show-summary", false, "Show project summary details")
 	rootCmd.Flags().StringSliceVar(&ignoreAuthors, "ignore-authors", nil, "Authors to ignore")
