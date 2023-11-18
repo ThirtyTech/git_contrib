@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"strconv"
@@ -10,34 +11,17 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/spf13/cobra"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"github.com/spf13/cobra"
 )
 
 // ChangeSet stores the additions and deletions.
-type ChangeSet struct {
-	Additions int
-	Deletions int
-}
+var debug bool = true
 
-// AuthorData holds the change sets by date for one author.
-type AuthorData struct {
-	Name      string
-	ChangeMap map[string]ChangeSet
-}
+func run(path string, daysAgo time.Time) error {
 
-func arrayToMap(keys []string) map[string]bool {
-	m := make(map[string]bool)
-	for _, key := range keys {
-		m[key] = true
-	}
-	return m
-}
-
-func run(path string, maxDates int) error {
-
-	daysAgo := time.Now().AddDate(0, 0, -maxDates)
+	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	var dates []string
 	for i := 0; i < maxDates; i++ {
 		date := daysAgo.AddDate(0, 0, i+1)
@@ -110,7 +94,8 @@ func run(path string, maxDates int) error {
 
 			currentDate = strings.Split(parts[1], "T")[0]
 			if !dateMap[currentDate] {
-				break;
+				// continue
+				break
 			}
 
 			// Extract the email part of the author as identifier
@@ -164,7 +149,7 @@ func run(path string, maxDates int) error {
 	p := message.NewPrinter(language.English)
 
 	// Print the totals in a tabular format.
-	for _, authorData := range totals {
+	for _, authorData := range sortAuthorsByTotalChanges(totals) {
 		fmt.Printf("%-20s", authorData.Name)
 		var total int
 		for i, date := range dates {
@@ -184,43 +169,78 @@ func run(path string, maxDates int) error {
 }
 
 func getCurrentDirectory() string {
-    dir, err := os.Getwd()
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
-    }
-    return dir
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return dir
 }
 
 func main() {
-    var (
-        path     string
-        maxDates int
-    )
+	var (
+		version       bool
+		fromDate      string
+		toDate        string
+		byDay         bool
+		mailmap       string
+		format        string
+		showSummary   bool
+		ignoreAuthors []string
+		ignoreFiles   []string
+	)
 
-    var rootCmd = &cobra.Command{
-        Use:   "git_contrib [path_to_directory] [max_dates]",
-        Short: "git_contrib processes a directory and a date limit",
-        Args:  cobra.MinimumNArgs(2),
-        Run: func(cmd *cobra.Command, args []string) {
-            path = args[0]
+	var rootCmd = &cobra.Command{
+		Use: "git_contrib",
+		Short: `git_contrib [path] gives statistics by authors to the project.
 
-            var err error
-            maxDates, err = strconv.Atoi(args[1])
-            if err != nil || maxDates <= 0 {
-                fmt.Fprintf(os.Stderr, "Invalid number of dates: %s\n", args[1])
-                os.Exit(2)
-            }
+Positional Arguments:
+path (optional)    Path to the directory. If not provided, defaults to the current directory.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var formattedFromDate time.Time
+			if version {
+				fmt.Println("Version: 1.0.0") // Replace with actual version
+				return
+			}
 
-            if err := run(path, maxDates); err != nil {
-                fmt.Fprintf(os.Stderr, "%s\n", err)
-                os.Exit(1)
-            }
-        },
-    }
+			path := "."
+			if len(args) > 0 {
+				path = args[0]
+			}
 
-    if err := rootCmd.Execute(); err != nil {
-        fmt.Fprintf(os.Stderr, "%s\n", err)
-        os.Exit(1)
-    }
+			if fromDate == "" {
+				formattedFromDate, _ = TryParseHumanReadableDateTimeOffset("week")
+			} else {
+				formattedFromDate, _ = TryParseHumanReadableDateTimeOffset(fromDate)
+			}
+			if toDate == "" {
+				toDate = time.Now().Format(time.RFC3339)
+			}
+
+			fmt.Println(formattedFromDate)
+
+			if !debug {
+				if err := run(path, formattedFromDate); err != nil {
+					fmt.Fprintf(os.Stderr, "%s\n", err)
+					os.Exit(1)
+				}
+			}
+
+		},
+	}
+
+	rootCmd.Flags().BoolVar(&version, "version", false, "Show the version information and exit")
+	rootCmd.Flags().StringVar(&fromDate, "from", "", "Starting date for commits to be considered")
+	rootCmd.Flags().StringVar(&toDate, "to", "", "Ending date for commits to be considered")
+	rootCmd.Flags().BoolVar(&byDay, "by-day", false, "Show results by day")
+	rootCmd.Flags().StringVar(&mailmap, "mailmap", "", "Path to mailmap file")
+	rootCmd.Flags().StringVar(&format, "format", "table", "Format to output results in")
+	rootCmd.Flags().BoolVar(&showSummary, "show-summary", false, "Show project summary details")
+	rootCmd.Flags().StringSliceVar(&ignoreAuthors, "ignore-authors", nil, "Authors to ignore")
+	rootCmd.Flags().StringSliceVar(&ignoreFiles, "ignore-files", nil, "Files to ignore")
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
 }
