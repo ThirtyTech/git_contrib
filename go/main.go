@@ -14,10 +14,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ChangeSet stores the additions and deletions.
 var debug bool
 
-func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
+func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary bool) error {
 
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	if toDate > 0 {
@@ -38,29 +37,23 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 	}
 	cmd := exec.Command(gitCmd, gitArgs...)
 
-	//Change Dir
 	cmd.Dir = path
 
-	// Create a map of commit hashes
 	commitMap := make(map[string]bool)
 
-	// Get a pipe to read from standard output
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		fmt.Println("Error creating StdoutPipe for Cmd", err)
 		return nil
 	}
 
-	// Start running the command
 	if err := cmd.Start(); err != nil {
 		fmt.Println("Error starting Cmd", err)
 		return nil
 	}
 
-	// Prepare a map to store the totals by author.
 	totals := make(map[string]*AuthorData)
 
-	// scanner := bufio.NewScanner(os.Stdin)
 	scanner := bufio.NewScanner(stdout)
 
 	var currentAuthor *AuthorData
@@ -69,24 +62,20 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Check if the line is empty.
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
 
-		// Un the progress of skipping files until next commit
 		if skipUntilNextCommit && !strings.HasPrefix(line, "^") {
 			continue
 		}
 
 		if strings.HasPrefix(line, "^") {
-			// Author information line.
 			parts := strings.Fields(line)
 			if len(parts) < 3 {
 				return fmt.Errorf("Invalid author line format: %s", line)
 			}
 
-			// Checks that commit hash has not already been seen in other branches. Skip files until next commit
 			commit := strings.Trim(parts[0], "^")
 			if _, exists := commitMap[commit]; exists {
 				skipUntilNextCommit = true
@@ -101,7 +90,6 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 				continue
 			}
 
-			// Extract the email part of the author as identifier
 			email := strings.Trim(parts[4], "<>")
 			email = strings.ToLower(email)
 			if _, exists := totals[email]; !exists {
@@ -126,13 +114,11 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 			}
 			currentAuthor = totals[email]
 		} else if unicode.IsDigit(rune(line[0])) && currentAuthor != nil {
-			// Totals line, starts with a number.
 			parts := strings.Fields(line)
 			if len(parts) < 2 {
 				return fmt.Errorf("Invalid totals line format: %s", line)
 			}
 
-			// Parse additions and deletions.
 			additions, err := strconv.Atoi(parts[0])
 			if err != nil {
 				return fmt.Errorf("Invalid number for additions: %s", parts[0])
@@ -142,7 +128,6 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 				return fmt.Errorf("Invalid number for deletions: %s", parts[1])
 			}
 
-			// Accumulate totals per date for the current author.
 			if changeSet, ok := currentAuthor.ChangeMap[currentDate]; ok {
 				changeSet.Additions += additions
 				changeSet.Deletions += deletions
@@ -152,22 +137,18 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 		}
 	}
 
-	// Check for errors in the scanning.
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading standard input: %v", err)
 	}
 
-	// Print the totals.
-	// Print the totals in a tabular format.
 	if byDay {
-		printTableByDay(maxDates, daysAgo, totals, dates)
+		printTableByDay(maxDates, daysAgo, totals, dates, showSummary)
 	} else {
-		printTableTotals(totals)
+		printTableTotals(totals, showSummary)
 	}
 
 	return nil
 }
-
 
 func main() {
 	var (
@@ -195,7 +176,6 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 		Run: func(cmd *cobra.Command, args []string) {
 			var formattedFromDate time.Time
 			if version {
-				fmt.Println("Version: 1.0.0") // Replace with actual version
 				return
 			}
 
@@ -203,19 +183,16 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 			if len(args) > 0 {
 				path = args[0]
 			}
-
 			//TODO: Check if path is a valid git directory
 
 			if fromDate == "" {
-				// formattedFromDate, _ = TryParseHumanReadableDateTimeOffset("week")
-				// Beginning of time
 				formattedFromDate = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 			} else {
 				formattedFromDate, _ = TryParseHumanReadableDateTimeOffset(fromDate)
 			}
 
 			if !debug {
-				if err := run(path, formattedFromDate, toDate, byDay); err != nil {
+				if err := run(path, formattedFromDate, toDate, byDay, showSummary); err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n", err)
 					os.Exit(1)
 				}
@@ -225,7 +202,7 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 
 	rootCmd.Flags().BoolVar(&version, "version", false, "Show the version information and exit")
 	rootCmd.Flags().StringVar(&fromDate, "from", "", "Starting date for commits to be considered")
-	rootCmd.Flags().IntVar(&toDate, "to", 0, "Ending date for commits to be considered")
+	rootCmd.Flags().IntVar(&toDate, "to", 0, "Ending number of days for commits to be considered")
 	rootCmd.Flags().BoolVar(&byDay, "by-day", false, "Show results by day")
 	rootCmd.Flags().StringVar(&format, "format", "table", "Format to output results in")
 	rootCmd.Flags().BoolVar(&showSummary, "show-summary", false, "Show project summary details")
