@@ -12,8 +12,6 @@ import (
 	"unicode"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 )
 
 // ChangeSet stores the additions and deletions.
@@ -170,33 +168,6 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 	return nil
 }
 
-func printTableByDay(maxDates int, daysAgo time.Time, totals map[string]*AuthorData, dates []string) {
-	fmt.Printf("%-20s", "Aurhor's Name")
-	for i := 0; i < maxDates; i++ {
-		date := daysAgo.AddDate(0, 0, i+1)
-		fmt.Printf("\t%s", date.Format("01/02"))
-	}
-	fmt.Print("\tTotal")
-	fmt.Println()
-
-	p := message.NewPrinter(language.English)
-
-	for _, authorData := range sortAuthorsByTotalChanges(totals) {
-		fmt.Printf("%-20s", authorData.Name)
-		var total int
-		for i, date := range dates {
-			if i >= maxDates {
-				break
-			}
-			changes := authorData.ChangeMap[date]
-			totalChanges := changes.Additions + changes.Deletions
-			total = total + totalChanges
-			p.Printf("\t%d", totalChanges)
-		}
-		p.Printf("\t%d", total)
-		fmt.Println()
-	}
-}
 
 func main() {
 	var (
