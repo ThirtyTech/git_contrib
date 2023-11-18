@@ -170,32 +170,6 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool) error {
 	return nil
 }
 
-func printTableTotals(totals map[string]*AuthorData) {
-	fmt.Printf("%-20s", "Aurhor's Name")
-	fmt.Print("\tCommits")
-	fmt.Print("\tFiles")
-	fmt.Print("\tLines")
-	fmt.Println()
-
-	p := message.NewPrinter(language.English)
-
-	for _, authorData := range sortAuthorsByTotalChanges(totals) {
-		fmt.Printf("%-20s", authorData.Name)
-		var totalLines int
-		var totalFiles int
-		var totalCommits int
-		for _, changes := range authorData.ChangeMap {
-			totalChanges := changes.Additions + changes.Deletions
-			totalLines = totalLines + totalChanges
-			totalFiles = totalFiles + changes.Files
-			totalCommits = totalCommits + changes.Commits
-		}
-		p.Printf("\t%d", totalCommits)
-		p.Printf("\t%d", totalFiles)
-		p.Printf("\t%d", totalLines)
-		fmt.Println()
-	}
-}
 func printTableByDay(maxDates int, daysAgo time.Time, totals map[string]*AuthorData, dates []string) {
 	fmt.Printf("%-20s", "Aurhor's Name")
 	for i := 0; i < maxDates; i++ {
