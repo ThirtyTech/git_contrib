@@ -53,7 +53,7 @@ func printTableByDay(maxDates int, daysAgo time.Time, totals map[string]*AuthorD
 	tw.SetTitle("Totals By Author By Day")
 
 	headers := table.Row{"Author's Name"}
-	for i := 0; i < maxDates; i++ {
+	for i := 1; i < maxDates; i++ {
 		date := daysAgo.AddDate(0, 0, i)
 		headers = append(headers, date.Format("01/02"))
 	}
@@ -71,10 +71,6 @@ func printTableByDay(maxDates int, daysAgo time.Time, totals map[string]*AuthorD
 		row := table.Row{authorData.Name}
 
 		for i, date := range dates {
-			if i >= maxDates {
-				println("WAT")
-				break
-			}
 			changes := authorData.ChangeMap[date]
 			totalChanges := changes.Additions + changes.Deletions
 			total = total + totalChanges

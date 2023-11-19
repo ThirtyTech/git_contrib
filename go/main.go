@@ -16,22 +16,22 @@ import (
 
 var debug bool
 
-func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary bool) error {
+func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary bool, ignoreAuthors []string) error {
 
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	if toDate > 0 {
 		maxDates = maxDates - toDate - 1
 	}
 	var dates []string
-	for i := 0; i < maxDates; i++ {
-		date := daysAgo.AddDate(0, 0, i+1)
+	for i := 1; i < maxDates; i++ {
+		date := daysAgo.AddDate(0, 0, i)
 		dates = append(dates, date.Format("2006-01-02"))
 	}
 
 	var dateMap = arrayToMap(dates)
 
 	gitCmd := "git"
-	gitArgs := []string{"--no-pager", "log", "--all", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", daysAgo.Format("2006-01-02"), "--format=^%h %aI %aN <%aE>"}
+	gitArgs := []string{"--no-pager", "log", "--all", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", daysAgo.Format("2006-01-02"), "--format=^%h|%aI|%aN|<%aE>"}
 	if toDate > 0 {
 		gitArgs = append(gitArgs, "--until", daysAgo.AddDate(0, 0, toDate).Format("2006-01-02"))
 	}
@@ -71,7 +71,7 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary boo
 		}
 
 		if strings.HasPrefix(line, "^") {
-			parts := strings.Fields(line)
+			parts := strings.Split(line, "|")
 			if len(parts) < 3 {
 				return fmt.Errorf("Invalid author line format: %s", line)
 			}
@@ -90,11 +90,25 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary boo
 				continue
 			}
 
-			email := strings.Trim(parts[4], "<>")
+			var authorName = parts[2]
+
+			if len(ignoreAuthors) > 0 {
+				skip := false
+				for _, author := range ignoreAuthors {
+					if strings.Contains(strings.ToLower(authorName), strings.ToLower(author)) {
+						skip = true
+					}
+				}
+				if skip {
+					continue
+				}
+			}
+
+			email := strings.Trim(parts[3], "<>")
 			email = strings.ToLower(email)
 			if _, exists := totals[email]; !exists {
 				totals[email] = &AuthorData{
-					Name:  parts[2] + " " + parts[3],
+					Name:  authorName,
 					Email: email,
 					ChangeMap: map[string]ChangeSet{
 						currentDate: {
@@ -192,7 +206,7 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 			}
 
 			if !debug {
-				if err := run(path, formattedFromDate, toDate, byDay, showSummary); err != nil {
+				if err := run(path, formattedFromDate, toDate, byDay, showSummary, ignoreAuthors); err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n", err)
 					os.Exit(1)
 				}
