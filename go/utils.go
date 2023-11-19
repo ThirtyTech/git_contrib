@@ -30,12 +30,13 @@ func TryParseHumanReadableDateTimeOffset(input string) (time.Time, bool) {
 	parts := strings.Fields(input)
 
 	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day()  - 1, 0, 0, 0, 0, now.Location())
 
 	switch strings.ToLower(parts[0]) {
 	case "week":
-		return truncateDate(now.AddDate(0, 0, -7)), true
+		return truncateDate(startOfDay.AddDate(0, 0, -7)), true
 	case "workweek":
-        fallthrough
+		fallthrough
 	case "work":
 		return truncateDate(findNextMonday()), true
 	}
@@ -47,17 +48,17 @@ func TryParseHumanReadableDateTimeOffset(input string) (time.Time, bool) {
 
 	switch strings.ToLower(parts[1]) {
 	case "second", "seconds":
-		return truncateDate(now.Add(time.Duration(-quantity) * time.Second)), true
+		return truncateDate(startOfDay.Add(time.Duration(-quantity) * time.Second)), true
 	case "minute", "minutes":
-		return truncateDate(now.Add(time.Duration(-quantity) * time.Minute)), true
+		return truncateDate(startOfDay.Add(time.Duration(-quantity) * time.Minute)), true
 	case "hour", "hours":
-		return truncateDate(now.Add(time.Duration(-quantity) * time.Hour)), true
+		return truncateDate(startOfDay.Add(time.Duration(-quantity) * time.Hour)), true
 	case "day", "days":
-		return truncateDate(now.AddDate(0, 0, -quantity)), true
+		return truncateDate(startOfDay.AddDate(0, 0, -quantity)), true
 	case "week", "weeks":
-		return truncateDate(now.AddDate(0, 0, -quantity*7)), true
+		return truncateDate(startOfDay.AddDate(0, 0, -quantity*7)), true
 	case "month", "months":
-		return truncateDate(now.AddDate(0, -quantity, 0)), true
+		return truncateDate(startOfDay.AddDate(0, -quantity, 0)), true
 	default:
 		return time.Time{}, false
 	}
@@ -92,16 +93,16 @@ func sortAuthorsByTotalChanges(authorsMap map[string]*AuthorData) []*AuthorData 
 	return authors
 }
 func IsGitDirectory(path string) bool {
-    gitPath := filepath.Join(path, ".git")
-    if _, err := os.Stat(gitPath); err == nil {
-        return true
-    }
+	gitPath := filepath.Join(path, ".git")
+	if _, err := os.Stat(gitPath); err == nil {
+		return true
+	}
 
-    // Secondary check if you're in a nested directory
-    cmd := exec.Command("git", "-C", path, "status")
-    if err := cmd.Run(); err != nil {
-        return false
-    }
+	// Secondary check if you're in a nested directory
+	cmd := exec.Command("git", "-C", path, "status")
+	if err := cmd.Run(); err != nil {
+		return false
+	}
 
-    return true
+	return true
 }
