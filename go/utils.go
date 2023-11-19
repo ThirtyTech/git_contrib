@@ -45,6 +45,10 @@ func TryParseHumanReadableDateTimeOffset(input string) (time.Time, bool) {
 		if date, err := time.Parse("2006-01-02", input); err == nil {
 			return date, true
 		}
+		if date, err := time.Parse("2006-01", input); err == nil {
+			return date, true
+		}
+		return time.Time{}, false
 	}
 
 	quantity, err := strconv.Atoi(parts[0])
