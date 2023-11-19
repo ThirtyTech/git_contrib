@@ -16,7 +16,7 @@ import (
 
 var debug bool
 
-func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary bool, ignoreAuthors []string) error {
+func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary bool, ignoreAuthors []string, ignoreFiles []string) error {
 
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	if toDate > 0 {
@@ -97,6 +97,7 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary boo
 				for _, author := range ignoreAuthors {
 					if strings.Contains(strings.ToLower(authorName), strings.ToLower(author)) {
 						skip = true
+						break
 					}
 				}
 				if skip {
@@ -132,6 +133,19 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary boo
 			if len(parts) < 2 {
 				return fmt.Errorf("Invalid totals line format: %s", line)
 			}
+
+            if len(ignoreFiles) > 0 {
+                skip := false
+                for _, file := range ignoreFiles {
+                    if strings.Contains(strings.ToLower(parts[2]), strings.ToLower(file)) {
+                        skip = true
+                        break
+                    }
+                }
+                if skip {
+                    continue
+                }
+            }
 
 			additions, err := strconv.Atoi(parts[0])
 			if err != nil {
@@ -206,7 +220,7 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 			}
 
 			if !debug {
-				if err := run(path, formattedFromDate, toDate, byDay, showSummary, ignoreAuthors); err != nil {
+				if err := run(path, formattedFromDate, toDate, byDay, showSummary, ignoreAuthors, ignoreFiles); err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n", err)
 					os.Exit(1)
 				}
