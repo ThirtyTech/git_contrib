@@ -16,7 +16,7 @@ import (
 
 var debug bool
 
-func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary bool, ignoreAuthors []string, ignoreFiles []string) error {
+func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSummary bool, ignoreAuthors []string, ignoreFiles []string) error {
 
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	if toDate > 0 {
@@ -134,18 +134,18 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary boo
 				return fmt.Errorf("Invalid totals line format: %s", line)
 			}
 
-            if len(ignoreFiles) > 0 {
-                skip := false
-                for _, file := range ignoreFiles {
-                    if strings.Contains(strings.ToLower(parts[2]), strings.ToLower(file)) {
-                        skip = true
-                        break
-                    }
-                }
-                if skip {
-                    continue
-                }
-            }
+			if len(ignoreFiles) > 0 {
+				skip := false
+				for _, file := range ignoreFiles {
+					if strings.Contains(strings.ToLower(parts[2]), strings.ToLower(file)) {
+						skip = true
+						break
+					}
+				}
+				if skip {
+					continue
+				}
+			}
 
 			additions, err := strconv.Atoi(parts[0])
 			if err != nil {
@@ -169,8 +169,8 @@ func run(path string, daysAgo time.Time, toDate int, byDay bool, showSummary boo
 		return fmt.Errorf("error reading standard input: %v", err)
 	}
 
-	if byDay {
-		printTableByDay(maxDates, daysAgo, totals, dates, showSummary)
+	if byDay > 0 {
+		printTableByDay(byDay, maxDates, daysAgo, totals, dates, showSummary)
 	} else {
 		printTableTotals(totals, showSummary)
 	}
@@ -183,7 +183,7 @@ func main() {
 		version       bool
 		fromDate      string
 		toDate        int
-		byDay         bool
+		byDay         string
 		format        string
 		showSummary   bool
 		ignoreAuthors []string
@@ -219,8 +219,9 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 				formattedFromDate, _ = TryParseHumanReadableDateTimeOffset(fromDate)
 			}
 
+			byDayOption := ToTableOption(byDay)
 			if !debug {
-				if err := run(path, formattedFromDate, toDate, byDay, showSummary, ignoreAuthors, ignoreFiles); err != nil {
+				if err := run(path, formattedFromDate, toDate, byDayOption, showSummary, ignoreAuthors, ignoreFiles); err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n", err)
 					os.Exit(1)
 				}
@@ -231,7 +232,7 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 	rootCmd.Flags().BoolVar(&version, "version", false, "Show the version information and exit")
 	rootCmd.Flags().StringVar(&fromDate, "from", "", "Starting date for commits to be considered")
 	rootCmd.Flags().IntVar(&toDate, "to", 0, "Ending number of days for commits to be considered")
-	rootCmd.Flags().BoolVar(&byDay, "by-day", false, "Show results by day")
+	rootCmd.Flags().StringVar(&byDay, "by-day", "", "Show results by day")
 	rootCmd.Flags().StringVar(&format, "format", "table", "Format to output results in")
 	rootCmd.Flags().BoolVar(&showSummary, "show-summary", false, "Show project summary details")
 	rootCmd.Flags().StringSliceVar(&ignoreAuthors, "ignore-authors", nil, "Authors to ignore")

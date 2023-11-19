@@ -48,9 +48,9 @@ func printTableTotals(totals map[string]*AuthorData, showSummary bool) {
 	fmt.Println(tw.Render())
 }
 
-func printTableByDay(maxDates int, daysAgo time.Time, totals map[string]*AuthorData, dates []string, showSummary bool) {
+func printTableByDay(tableOption TableOption, maxDates int, daysAgo time.Time, totals map[string]*AuthorData, dates []string, showSummary bool) {
 	tw := table.NewWriter()
-	tw.SetTitle("Totals By Author By Day")
+	tw.SetTitle(fmt.Sprintf("Total %s By Author By Day", tableOption.ToString()))
 
 	headers := table.Row{"Author's Name"}
 	for i := 1; i < maxDates; i++ {
@@ -72,7 +72,15 @@ func printTableByDay(maxDates int, daysAgo time.Time, totals map[string]*AuthorD
 
 		for i, date := range dates {
 			changes := authorData.ChangeMap[date]
-			totalChanges := changes.Additions + changes.Deletions
+			var totalChanges int
+			switch tableOption {
+			case Lines:
+				totalChanges = changes.Additions + changes.Deletions
+			case Files:
+				totalChanges = changes.Files
+			case Commits:
+				totalChanges = changes.Commits
+			}
 			total = total + totalChanges
 			row = append(row, humanize.Comma(int64(totalChanges)))
 			if showSummary {
