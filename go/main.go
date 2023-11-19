@@ -11,13 +11,26 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
+	"github.com/theckman/yacspin"
 )
 
 var debug bool
 
 func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSummary bool, ignoreAuthors []string, ignoreFiles []string) error {
+	startTime := time.Now()
+	cfg := yacspin.Config{
+		Frequency:       100 * time.Millisecond,
+		CharSet:         yacspin.CharSets[62],
+        Colors:         []string{"fgYellow"},
+		Suffix:          " Processing git log... ",
+		StopCharacter: "✓",
+		StopColors:    []string{"fgGreen"},
+	}
 
+	spinner, err := yacspin.New(cfg)
+	spinner.Start()
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	if toDate > 0 {
 		maxDates = maxDates - toDate - 1
@@ -168,6 +181,9 @@ func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSumm
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading standard input: %v", err)
 	}
+
+	spinner.StopMessage("Done in " + humanize.RelTime(startTime, time.Now(), "", ""))
+	spinner.Stop()
 
 	if byDay > 0 {
 		printTableByDay(byDay, maxDates, daysAgo, totals, dates, showSummary)
