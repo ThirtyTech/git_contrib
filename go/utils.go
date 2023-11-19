@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -87,4 +90,18 @@ func sortAuthorsByTotalChanges(authorsMap map[string]*AuthorData) []*AuthorData 
 	})
 
 	return authors
+}
+func IsGitDirectory(path string) bool {
+    gitPath := filepath.Join(path, ".git")
+    if _, err := os.Stat(gitPath); err == nil {
+        return true
+    }
+
+    // Secondary check if you're in a nested directory
+    cmd := exec.Command("git", "-C", path, "status")
+    if err := cmd.Run(); err != nil {
+        return false
+    }
+
+    return true
 }

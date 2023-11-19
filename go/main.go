@@ -227,7 +227,10 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 			if len(args) > 0 {
 				path = args[0]
 			}
-			//TODO: Check if path is a valid git directory
+            if !IsGitDirectory(path) {
+                fmt.Fprintf(os.Stderr, "%s is not a git directory\n", path)
+                os.Exit(1)
+            }
 
 			if fromDate == "" {
 				formattedFromDate = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
