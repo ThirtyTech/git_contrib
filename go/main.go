@@ -21,10 +21,10 @@ var debug bool
 func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSummary bool, ignoreAuthors []string, ignoreFiles []string) error {
 	startTime := time.Now()
 	cfg := yacspin.Config{
-		Frequency:       100 * time.Millisecond,
-		CharSet:         yacspin.CharSets[62],
-        Colors:         []string{"fgYellow"},
-		Suffix:          " Processing git log... ",
+		Frequency:     100 * time.Millisecond,
+		CharSet:       yacspin.CharSets[62],
+		Colors:        []string{"fgYellow"},
+		Suffix:        " Processing git log... ",
 		StopCharacter: "✓",
 		StopColors:    []string{"fgGreen"},
 	}
@@ -227,10 +227,10 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 			if len(args) > 0 {
 				path = args[0]
 			}
-            if !IsGitDirectory(path) {
-                fmt.Fprintf(os.Stderr, "%s is not a git directory\n", path)
-                os.Exit(1)
-            }
+			if !IsGitDirectory(path) {
+				fmt.Fprintf(os.Stderr, "%s is not a git directory\n", path)
+				os.Exit(1)
+			}
 
 			if fromDate == "" {
 				formattedFromDate = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -251,7 +251,7 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 	rootCmd.Flags().BoolVar(&version, "version", false, "Show the version information and exit")
 	rootCmd.Flags().StringVar(&fromDate, "from", "", "Starting date for commits to be considered")
 	rootCmd.Flags().IntVar(&toDate, "to", 0, "Ending number of days for commits to be considered")
-	rootCmd.Flags().StringVar(&byDay, "by-day", "", "Show results by day")
+	rootCmd.Flags().StringVar(&byDay, "by-day", "", "Show results by day [lines, commits, files]")
 	rootCmd.Flags().StringVar(&format, "format", "table", "Format to output results in")
 	rootCmd.Flags().BoolVar(&showSummary, "show-summary", false, "Show project summary details")
 	rootCmd.Flags().StringSliceVar(&ignoreAuthors, "ignore-authors", nil, "Authors to ignore")
