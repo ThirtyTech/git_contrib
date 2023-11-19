@@ -11,7 +11,7 @@ import (
 )
 
 func findNextMonday() time.Time {
-	today := time.Now()
+	today := truncateDate(time.Now())
 	daysUntilMonday := (-7 - int(today.Weekday()) + 1) % 7
 	nextMonday := today.AddDate(0, 0, daysUntilMonday)
 	return nextMonday
@@ -30,15 +30,21 @@ func TryParseHumanReadableDateTimeOffset(input string) (time.Time, bool) {
 	parts := strings.Fields(input)
 
 	now := time.Now()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day()  - 1, 0, 0, 0, 0, now.Location())
+	startOfDay := truncateDate(now)
 
 	switch strings.ToLower(parts[0]) {
 	case "week":
-		return truncateDate(startOfDay.AddDate(0, 0, -7)), true
+		return startOfDay.AddDate(0, 0, -7), true
 	case "workweek":
 		fallthrough
 	case "work":
-		return truncateDate(findNextMonday()), true
+		return findNextMonday(), true
+	}
+
+	if strings.Contains(input, "-") {
+		if date, err := time.Parse("2006-01-02", input); err == nil {
+			return date, true
+		}
 	}
 
 	quantity, err := strconv.Atoi(parts[0])
@@ -48,17 +54,17 @@ func TryParseHumanReadableDateTimeOffset(input string) (time.Time, bool) {
 
 	switch strings.ToLower(parts[1]) {
 	case "second", "seconds":
-		return truncateDate(startOfDay.Add(time.Duration(-quantity) * time.Second)), true
+		return startOfDay.Add(time.Duration(-quantity) * time.Second), true
 	case "minute", "minutes":
-		return truncateDate(startOfDay.Add(time.Duration(-quantity) * time.Minute)), true
+		return startOfDay.Add(time.Duration(-quantity) * time.Minute), true
 	case "hour", "hours":
-		return truncateDate(startOfDay.Add(time.Duration(-quantity) * time.Hour)), true
+		return startOfDay.Add(time.Duration(-quantity) * time.Hour), true
 	case "day", "days":
-		return truncateDate(startOfDay.AddDate(0, 0, -quantity)), true
+		return startOfDay.AddDate(0, 0, -quantity), true
 	case "week", "weeks":
-		return truncateDate(startOfDay.AddDate(0, 0, -quantity*7)), true
+		return startOfDay.AddDate(0, 0, -quantity*7), true
 	case "month", "months":
-		return truncateDate(startOfDay.AddDate(0, -quantity, 0)), true
+		return startOfDay.AddDate(0, -quantity, 0), true
 	default:
 		return time.Time{}, false
 	}

@@ -53,7 +53,7 @@ func printTableByDay(tableOption TableOption, maxDates int, daysAgo time.Time, t
 	tw.SetTitle(fmt.Sprintf("Total %s By Author By Day", tableOption.ToString()))
 
 	headers := table.Row{"Author's Name"}
-	for i := 1; i < maxDates; i++ {
+	for i := 0; i < maxDates; i++ {
 		date := daysAgo.AddDate(0, 0, i)
 		headers = append(headers, date.Format("01/02"))
 	}

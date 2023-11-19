@@ -36,7 +36,7 @@ func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSumm
 		maxDates = maxDates - toDate - 1
 	}
 	var dates []string
-	for i := 1; i < maxDates; i++ {
+	for i := 0; i < maxDates; i++ {
 		date := daysAgo.AddDate(0, 0, i)
 		dates = append(dates, date.Format("2006-01-02"))
 	}
