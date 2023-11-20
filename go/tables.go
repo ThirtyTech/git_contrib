@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"golang.org/x/term"
 )
 
 func printTableTotals(totals map[string]*AuthorData, showSummary bool) {
@@ -50,6 +52,11 @@ func printTableTotals(totals map[string]*AuthorData, showSummary bool) {
 
 func printTableByDay(tableOption TableOption, maxDates int, daysAgo time.Time, totals map[string]*AuthorData, dates []string, showSummary bool) {
 	tw := table.NewWriter()
+	width, _, widthErr := term.GetSize(int(os.Stdout.Fd()))
+
+	if widthErr != nil || term.IsTerminal(int(os.Stdout.Fd())) {
+		tw.SetAllowedRowLength(width)
+	}
 	tw.SetTitle(fmt.Sprintf("Total %s By Author By Day", tableOption.ToString()))
 
 	headers := table.Row{"Author's Name"}
