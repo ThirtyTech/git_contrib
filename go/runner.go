@@ -33,7 +33,7 @@ func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSumm
 	}
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	if toDate > 0 {
-		maxDates = maxDates - toDate - 1
+		maxDates = toDate
 	}
 	var dates []string
 	for i := 0; i < maxDates; i++ {
