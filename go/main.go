@@ -14,6 +14,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 	"github.com/theckman/yacspin"
+	"golang.org/x/term"
 )
 
 var debug bool
@@ -30,7 +31,9 @@ func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSumm
 	}
 
 	spinner, err := yacspin.New(cfg)
-	spinner.Start()
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		spinner.Start()
+	}
 	maxDates := int(math.Round(time.Now().Sub(daysAgo).Hours() / 24))
 	if toDate > 0 {
 		maxDates = maxDates - toDate - 1
