@@ -20,7 +20,7 @@ func main() {
 		byDay         string
 		inverted      bool
 		format        string
-		hideSummary   bool = true
+		hideSummary   bool = false
 		ignoreAuthors []string
 		ignoreFiles   []string
 	)
