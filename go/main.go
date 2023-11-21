@@ -10,6 +10,7 @@ import (
 )
 
 var debug bool
+var log bool
 
 func main() {
 	var (
@@ -26,6 +27,10 @@ func main() {
 	debugEnv, exists := os.LookupEnv("DEBUG")
 	if exists {
 		debug, _ = strconv.ParseBool(debugEnv)
+	}
+	logEnv, exists := os.LookupEnv("LOG")
+	if exists {
+		log, _ = strconv.ParseBool(logEnv)
 	}
 
 	var rootCmd = &cobra.Command{

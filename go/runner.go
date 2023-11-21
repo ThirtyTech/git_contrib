@@ -44,9 +44,12 @@ func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSumm
 	var dateMap = arrayToMap(dates)
 
 	gitCmd := "git"
-	gitArgs := []string{"--no-pager", "log", "--all", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", daysAgo.Format("2006-01-02"), "--format=^%h|%aI|%aN|<%aE>"}
+	gitArgs := []string{"--no-pager", "log", "--branches", "--remotes", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", daysAgo.AddDate(0, 0, -1).Format("2006-01-02"), "--format=^%h|%aI|%aN|<%aE>"}
 	if toDate > 0 {
 		gitArgs = append(gitArgs, "--until", daysAgo.AddDate(0, 0, toDate).Format("2006-01-02"))
+	}
+	if log {
+		fmt.Println("gitArgs", gitArgs)
 	}
 	cmd := exec.Command(gitCmd, gitArgs...)
 
