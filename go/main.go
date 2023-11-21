@@ -18,8 +18,9 @@ func main() {
 		fromDate      string
 		toDate        int
 		byDay         string
+		inverted      bool
 		format        string
-		showSummary   bool
+		hideSummary   bool = true
 		ignoreAuthors []string
 		ignoreFiles   []string
 	)
@@ -62,7 +63,7 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 
 			byDayOption := ToTableOption(byDay)
 			if !debug {
-				if err := run(path, formattedFromDate, toDate, byDayOption, showSummary, ignoreAuthors, ignoreFiles); err != nil {
+				if err := run(path, formattedFromDate, toDate, byDayOption, inverted, hideSummary, ignoreAuthors, ignoreFiles); err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n", err)
 					os.Exit(1)
 				}
@@ -75,7 +76,8 @@ path (optional)    Path to the directory. If not provided, defaults to the curre
 	rootCmd.Flags().IntVar(&toDate, "to", 0, "Ending number of days for commits to be considered")
 	rootCmd.Flags().StringVar(&byDay, "by-day", "", "Show results by day [lines, commits, files]")
 	rootCmd.Flags().StringVar(&format, "format", "table", "Format to output results in")
-	rootCmd.Flags().BoolVar(&showSummary, "show-summary", false, "Show project summary details")
+	// rootCmd.Flags().BoolVar(&hideSummary, "hide-summary", false, "Hide project summary details")
+	rootCmd.Flags().BoolVar(&inverted, "inverted", false, "Invert authors and dates in table")
 	rootCmd.Flags().StringSliceVar(&ignoreAuthors, "ignore-authors", nil, "Authors to ignore")
 	rootCmd.Flags().StringSliceVar(&ignoreFiles, "ignore-files", nil, "Files to ignore")
 

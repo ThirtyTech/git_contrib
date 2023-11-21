@@ -10,7 +10,7 @@ import (
 	"golang.org/x/term"
 )
 
-func printTableTotals(totals map[string]*AuthorData, showSummary bool) {
+func printTableTotals(totals map[string]*AuthorData, hideSummary bool) {
 	tw := table.NewWriter()
 
 	tw.AppendHeader(table.Row{"Author", "Commits", "Files", "Lines"})
@@ -19,7 +19,7 @@ func printTableTotals(totals map[string]*AuthorData, showSummary bool) {
 
 	footer := table.Row{"Summary Totals"}
 	var footerCounts []int
-	if showSummary {
+	if !hideSummary {
 		footerCounts = make([]int, 3)
 	}
 
@@ -33,14 +33,14 @@ func printTableTotals(totals map[string]*AuthorData, showSummary bool) {
 			totalFiles += changes.Files
 			totalCommits += changes.Commits
 		}
-		if showSummary {
+		if !hideSummary {
 			footerCounts[0] += totalCommits
 			footerCounts[1] += totalFiles
 			footerCounts[2] += totalLines
 		}
 		tw.AppendRow(table.Row{authorData.Name, humanize.Comma(int64(totalCommits)), humanize.Comma(int64(totalFiles)), humanize.Comma(int64(totalLines))})
 	}
-	if showSummary {
+	if !hideSummary {
 		footer = append(footer, humanize.Comma(int64(footerCounts[0])))
 		footer = append(footer, humanize.Comma(int64(footerCounts[1])))
 		footer = append(footer, humanize.Comma(int64(footerCounts[2])))
@@ -106,5 +106,84 @@ func printTableByDay(tableOption TableOption, maxDates int, daysAgo time.Time, t
 		footer = append(footer, humanize.Comma(int64(footerTotal)))
 		tw.AppendFooter(footer)
 	}
+	fmt.Println(tw.Render())
+}
+
+func printTableByDayInverted(tableOption TableOption, maxDates int, daysAgo time.Time, totals map[string]*AuthorData, dates []string, hideSummary bool) {
+	tw := table.NewWriter()
+	width, _, widthErr := term.GetSize(int(os.Stdout.Fd()))
+
+	if widthErr != nil || term.IsTerminal(int(os.Stdout.Fd())) {
+		tw.SetAllowedRowLength(width)
+	}
+
+	// Sorting authors and preparing the header
+	sortedAuthors := sortAuthorsByTotalChanges(totals)
+	headers := table.Row{"Date"}
+	for _, authorData := range sortedAuthors {
+		headers = append(headers, authorData.Name)
+	}
+	if !hideSummary {
+		headers = append(headers, "Total")
+	}
+	tw.AppendHeader(headers)
+
+	// Preparing data rows by dates
+	for i := 0; i < maxDates; i++ {
+		date := daysAgo.AddDate(0, 0, i)
+		row := table.Row{date.Format("01/02")}
+		var rowTotal int
+
+		for _, authorData := range sortedAuthors {
+			changes := authorData.ChangeMap[dates[i]]
+			var totalChanges int
+			switch tableOption {
+			case Lines:
+				totalChanges = changes.Additions + changes.Deletions
+			case Files:
+				totalChanges = changes.Files
+			case Commits:
+				totalChanges = changes.Commits
+			}
+			row = append(row, humanize.Comma(int64(totalChanges)))
+			rowTotal += totalChanges
+		}
+
+		if !hideSummary {
+			row = append(row, humanize.Comma(int64(rowTotal)))
+		}
+		tw.AppendRow(row)
+	}
+
+	// Optional summary footer
+	if !hideSummary {
+		footer := table.Row{"Summary Totals"}
+		var footerTotals []int64
+		for _, authorData := range sortedAuthors {
+			var authorTotal int64
+			for _, date := range dates {
+				changes := authorData.ChangeMap[date]
+				switch tableOption {
+				case Lines:
+					authorTotal += int64(changes.Additions + changes.Deletions)
+				case Files:
+					authorTotal += int64(changes.Files)
+				case Commits:
+					authorTotal += int64(changes.Commits)
+				}
+			}
+			footer = append(footer, humanize.Comma(authorTotal))
+			footerTotals = append(footerTotals, authorTotal)
+		}
+
+		// Calculating total for all authors
+		var grandTotal int64
+		for _, total := range footerTotals {
+			grandTotal += total
+		}
+		footer = append(footer, humanize.Comma(grandTotal))
+		tw.AppendFooter(footer)
+	}
+
 	fmt.Println(tw.Render())
 }

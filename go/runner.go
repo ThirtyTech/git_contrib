@@ -16,7 +16,7 @@ import (
 	"golang.org/x/term"
 )
 
-func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSummary bool, ignoreAuthors []string, ignoreFiles []string) error {
+func run(path string, daysAgo time.Time, toDate int, byDay TableOption, inverted bool, showSummary bool, ignoreAuthors []string, ignoreFiles []string) error {
 	startTime := time.Now()
 	cfg := yacspin.Config{
 		Frequency:     100 * time.Millisecond,
@@ -189,7 +189,12 @@ func run(path string, daysAgo time.Time, toDate int, byDay TableOption, showSumm
 	spinner.Stop()
 
 	if byDay > 0 {
-		printTableByDay(byDay, maxDates, daysAgo, totals, dates, showSummary)
+		if inverted {
+			printTableByDayInverted(byDay, maxDates, daysAgo, totals, dates, showSummary)
+		} else {
+			printTableByDay(byDay, maxDates, daysAgo, totals, dates, showSummary)
+		}
+
 	} else {
 		printTableTotals(totals, showSummary)
 	}
