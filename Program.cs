@@ -2,8 +2,6 @@
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using System.Reflection;
-// using LibGit2Sharp;
-// GlobalSettings.NativeLibraryPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libgit2-e632535.so");
 
 var Version = new Option<bool>("--version", "Show the version information and exit");
 
@@ -22,7 +20,7 @@ parseArgument: (result) =>
     return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.Now;
 
 });
-var ByDay = new Option<bool>("--by-day", description: "Show results by day");
+var ByDay = new Option<ByDay?>("--by-day", description: "Show results by day");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
 var ShowSummary = new Option<bool>("--show-summary", description: "Show project summary details");
@@ -52,22 +50,13 @@ var Config = new Command("config", "Configure defaults for the tool")
     ConfigArg
 };
 
-var Plot = new Command("plot", "Plot the results of the analysis")
-{
-    FromDate,
-    ToDate,
-    Path,
-    Mailmap,
-    Format,
-};
-
 var Chart = new Command("chart", "Launch interactive server to view results") { Path, IgnoreAuthors, FromDate, ToDate, Mailmap, IgnoreFiles };
 
 root.AddCommand(Config);
 // root.AddCommand(Plot);
 root.AddCommand(Chart);
 
-root.SetHandler((context) =>
+root.SetHandler(async (context) =>
 {
     if (context.ParseResult.GetValueForOption(Version))
     {
@@ -80,33 +69,18 @@ root.SetHandler((context) =>
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
         ByDay = context.ParseResult.GetValueForOption(ByDay),
         Path = context.ParseResult.GetValueForArgument(Path),
-        Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
-        Format = context.ParseResult.GetValueForOption(Format),
         ShowSummary = context.ParseResult.GetValueForOption(ShowSummary),
         IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
         IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),
     };
-    Work.DoWork(options);
+    await Work.DoWork(options);
 });
 
 
-Config.SetHandler((options) =>
+Config.SetHandler(async (options) =>
 {
 
-    Work.DoWork(Options.Convert(options.ParseResult.GetValueForArgument(ConfigArg)));
-});
-
-Plot.SetHandler(async (context) =>
-{
-    var options = new Options
-    {
-        FromDate = context.ParseResult.GetValueForOption(FromDate) ?? DateTimeOffset.MinValue,
-        ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
-        Path = context.ParseResult.GetValueForArgument(Path),
-        Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
-        Format = context.ParseResult.GetValueForOption(Format),
-    };
-    await CommitPlot.DoWorkAsync(options);
+    await Work.DoWork(Options.Convert(options.ParseResult.GetValueForArgument(ConfigArg)));
 });
 
 Chart.SetHandler((context) =>

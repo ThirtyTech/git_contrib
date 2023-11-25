@@ -45,7 +45,7 @@ public static class Utils
             dir = dir.Parent;
         }
 
-        return string.Empty;
+        return String.Empty;
     }
     public static DateTime FindLastMonday()
     {

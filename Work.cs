@@ -1,10 +1,8 @@
-using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Reactive.Linq;
+using System.Text;
 using System.Text.Json;
-using ConsoleTables;
-using LibGit2Sharp;
-using ShellProgressBar;
+using CliWrap;
+using CliWrap.Buffered;
 
 public static class Work
 {
@@ -33,226 +31,155 @@ public static class Work
 
     public static readonly int MaxConcurrency = Environment.ProcessorCount - 1;
 
-    public static IEnumerable<AuthorContrib> DoWork(Options options)
+    public static async Task<IEnumerable<AuthorData>?> DoWork(Options options)
     {
 
         if (options.Format != global::Format.None)
         {
             Console.WriteLine("Processing directory: " + options.Path);
         }
-        // Making commit for the same of it here
-        using (var repo = new Repository(Utils.FindNearestGitDirectory(options.Path)))
+
+        if (!await Utils.IsGitDirectoryAsync(options.Path))
         {
-            if (options.Fetch && repo.Network.Remotes.Count() > 0)
+            Console.WriteLine("Not a git directory: " + options.Path);
+            return null;
+        }
+
+        int maxDates = (int)Math.Round((DateTime.Now - options.FromDate).TotalDays);
+
+        var dates = Enumerable.Range(0, maxDates)
+                              .Select(i => options.FromDate.AddDays(i).ToString("yyyy-MM-dd"))
+                              .ToList();
+
+        var dateMap = dates.ToHashSet();
+
+        await Cli.Wrap("git")
+            .WithValidation(CommandResultValidation.None)
+            .WithArguments(new[] { "fetch", "--all" })
+            .WithWorkingDirectory(options.Path)
+            .ExecuteBufferedAsync();
+
+        var buffer = new MemoryStream();
+
+        string gitCmd = "git";
+        var gitArgs = new List<string> { "--no-pager", "log", "--branches", "--remotes", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", options.FromDate.AddDays(-1).ToString("yyyy-MM-dd"), "--format=^%h|%aI|%aN|<%aE>" };
+
+        var gitCmdResult = await Cli.Wrap(gitCmd)
+            .WithValidation(CommandResultValidation.ZeroExitCode)
+            .WithStandardOutputPipe(PipeTarget.ToStream(buffer))
+            .WithArguments(gitArgs)
+            .WithWorkingDirectory(options.Path)
+            .ExecuteBufferedAsync();
+
+        bool skipUntilNextCommit = false;
+        var totals = new Dictionary<string, AuthorData>();
+        var commitMap = new HashSet<string>();
+        string? currentDate = null;
+        AuthorData? currentAuthor = null;
+
+        buffer.Seek(0, SeekOrigin.Begin);
+        using (var reader = new StreamReader(buffer))
+        {
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
             {
-                if (options.Format != global::Format.None)
+                if (string.IsNullOrWhiteSpace(line))
                 {
-                    Console.WriteLine("Fetching remote: " + repo.Network.Remotes.First().Name);
+                    continue;
                 }
-                var psi = new ProcessStartInfo
+
+                if (line.StartsWith("^"))
                 {
-                    FileName = "git",
-                    Arguments = "fetch",
-                    WorkingDirectory = options.Path,
-                    UseShellExecute = false,
-                };
-
-                var process = Process.Start(psi);
-                process?.WaitForExit();
-            }
-            var mailmap = new Mailmap(!string.IsNullOrWhiteSpace(options.Mailmap) ? options.Mailmap : options.Path);
-            var filter = new CommitFilter
-            {
-                IncludeReachableFrom = repo.Refs,
-                SortBy = CommitSortStrategies.Topological | CommitSortStrategies.Reverse,
-            };
-
-            // Filters out merged branch commits;
-            var commits = repo.Commits.QueryBy(filter)
-                .Where(c => c.Parents.Count() == 1)
-                .Where(c => c.Committer.When >= options.FromDate)
-                .Where(c => c.Committer.When <= options.ToDate);
-
-            var uniqueCommitsEarly = commits.AsParallel().WithDegreeOfParallelism(MaxConcurrency).Select(c =>
-            {
-                var message = c.Message;
-                var authorDate = c.Author.When;
-                var hash = (message + authorDate).GetHashCode();
-
-                return new
-                {
-                    UniqueHash = hash,
-                    Commit = c
-                };
-            }).ToList().DistinctBy(c => c.UniqueHash).ToList();
-
-            var uniqueCommits = uniqueCommitsEarly
-                .Select(c => c.Commit)
-                .OrderBy(x => x.Author.When)
-                .Where(x => !options.IgnoreAuthors.Any(e => x.Author.ToString().Contains(e)))
-                .ToList();
-
-            var uniqueCommitsGroupedByAuthor = uniqueCommits.GroupBy(c => c.Author.ToString());
-
-            var pbar = options.Format != global::Format.None ? new ProgressBar(
-                uniqueCommitsGroupedByAuthor.Count(),
-                "Processing commits by author",
-                new ProgressBarOptions
-                {
-                    ForegroundColor = ConsoleColor.Yellow,
-                    ForegroundColorDone = ConsoleColor.DarkGreen,
-                    ProgressCharacter = '─',
-                    ProgressBarOnBottom = true
-                }
-            ) : null;
-
-            // Loop through each group of commits by author
-            var authorContribs = uniqueCommitsGroupedByAuthor
-            .AsParallel()
-            .WithDegreeOfParallelism(MaxConcurrency)
-            .Select(author =>
-            {
-                // Group Author commits by DateOnly
-                var authorCommitsByDate = author.GroupBy(c => c.Author.When.Date).Select(g =>
-                {
-                    var patches = g.SelectMany(c => repo.Diff.Compare<Patch>(c.Tree, c.Parents.First().Tree)).ToList();
-                    var files = patches.Select(p => p.Path).Where(p => !options.IgnoreFiles.Any(e => p.Contains(e))).Distinct().ToList();
-                    var filteredPatches = patches.Where(p => !ExcludeExtensions.Any(e => p.Path.EndsWith(e)) && !options.IgnoreFiles.Any(e => p.Path.Contains(e))).ToList();
-                    var linesAdded = filteredPatches.Sum(p => p.LinesAdded);
-                    var linesDeleted = filteredPatches.Sum(p => p.LinesDeleted);
-                    return new Totals
+                    var parts = line.Split('|');
+                    var commit = parts[0][1..];
+                    var date = parts[1];
+                    var author = parts[2];
+                    var email = parts[3].Trim('<', '>');
+                    var authorDate = DateTimeOffset.Parse(date);
+                    var authorDateStr = authorDate.ToString("yyyy-MM-dd");
+                    if (!dateMap.Contains(authorDateStr))
                     {
-                        Date = DateOnly.FromDateTime(g.Key),
-                        Files = files.Count(),
-                        Lines = linesAdded + linesDeleted,
-                        LinesAdded = linesAdded,
-                        LinesDeleted = linesDeleted,
-                        Commits = g.Count()
-                    };
-                }).ToList();
-
-                pbar?.Tick();
-
-                return new AuthorContrib
-                {
-                    Author = author.Key,
-                    Project = options.Path,
-                    Commits = author.ToList(),
-                    TotalsByDate = authorCommitsByDate,
-                    Totals = new Totals
-                    {
-                        Commits = author.Count(),
-                        Files = authorCommitsByDate.Select(f => f.Files).Sum(f => f),
-                        Lines = authorCommitsByDate.Select(p => p.Lines).Sum(p => p)
+                        skipUntilNextCommit = true;
+                        continue;
                     }
-                };
-            }).ToList();
-            pbar?.Dispose();
-
-
-            // Merge author records where name matches mailmap.validate
-            var mergedAuthorContribs = authorContribs.GroupBy(a => mailmap.Validate(a.Author)).Select(g =>
-            {
-                return new AuthorContrib
-                {
-                    Author = g.Key,
-                    Project = options.Path,
-                    Commits = g.SelectMany(a => a.Commits).ToList(),
-                    TotalsByDate = g.SelectMany(a => a.TotalsByDate).GroupBy(a => a.Date).Select(g =>
+                    if (options.IgnoreAuthors.Any(author.Contains))
                     {
-                        return new Totals
+                        skipUntilNextCommit = true;
+                        continue;
+                    }
+                    if (commitMap.Contains(commit))
+                    {
+                        skipUntilNextCommit = true;
+                        continue;
+                    }
+
+                    skipUntilNextCommit = false;
+                    commitMap.Add(commit);
+                    currentDate = authorDateStr;
+
+                    if (!totals.ContainsKey(author))
+                    {
+                        totals[author] = new AuthorData
                         {
-                            Date = g.Key,
-                            Files = g.Sum(a => a.Files),
-                            Lines = g.Sum(a => a.Lines),
-                            LinesAdded = g.Sum(a => a.LinesAdded),
-                            LinesDeleted = g.Sum(a => a.LinesDeleted),
-                            Commits = g.Sum(a => a.Commits)
+                            Name = author,
+                            Email = email,
+                            ChangeMap = new Dictionary<string, ChangeSet>() {
+                                { authorDateStr, new ChangeSet {
+                                    Commits = 1
+                                }}
+                            }
                         };
-                    }).ToList(),
-                    Totals = new Totals
-                    {
-                        Commits = g.Sum(a => a.Totals.Commits),
-                        Files = g.Sum(a => a.Totals.Files),
-                        Lines = g.Sum(a => a.Totals.Lines)
                     }
-                };
-            }).OrderByDescending(a => a.Totals.Lines);
+                    else
+                    {
+                        if (totals[author].ChangeMap.ContainsKey(authorDateStr))
+                        {
+                            totals[author].ChangeMap[authorDateStr].Commits++;
+                        }
+                        else
+                        {
+                            totals[author].ChangeMap[authorDateStr] = new ChangeSet
+                            {
+                                Commits = 1
+                            };
+                        }
+                    }
 
-            if (options.Format == global::Format.Table && !options.ByDay)
-            {
-
-                var table = new ConsoleTable("Author", "Files", "Commits", "Lines");
-                table.Options.EnableCount = false;
-                Console.WriteLine("Date Range: " + options.FromDate.ToString("MM/dd/yyyy") + " - " + options.ToDate.ToString("MM/dd/yyyy"));
-                Console.WriteLine("First Commit: " + uniqueCommits.FirstOrDefault()?.Committer.When ?? "");
-                Console.WriteLine("Last Commit: " + uniqueCommits.LastOrDefault()?.Committer.When ?? "");
-                foreach (var author in mergedAuthorContribs)
-                {
-                    table.AddRow(author.Author, author.Totals.Files.ToString("N0"), author.Totals.Commits.ToString("N0"), author.Totals.Lines.ToString("N0"));
+                    currentAuthor = totals[author];
                 }
-                if (options.ShowSummary)
+                else if (char.IsDigit(line[0]) && currentAuthor != null && currentDate != null && !skipUntilNextCommit)
                 {
-                    table.AddRow("Project Totals", mergedAuthorContribs.Sum(a => a.Totals.Files).ToString("N0"), mergedAuthorContribs.Sum(a => a.Totals.Commits).ToString("N0"), mergedAuthorContribs.Sum(a => a.Totals.Lines).ToString("N0"));
+                    var parts = line.Split("\t", StringSplitOptions.RemoveEmptyEntries);
+                    if (options.IgnoreFiles.Any(parts[2].Contains))
+                    {
+                        continue;
+                    }
+
+                    if (!int.TryParse(parts[0], out var additions) || !int.TryParse(parts[1], out var deletions))
+                    {
+                        throw new Exception($"Invalid number format in line: {line}");
+                    }
+
+                    if (currentAuthor.ChangeMap.TryGetValue(currentDate, out var changeSet))
+                    {
+                        changeSet.Additions += additions;
+                        changeSet.Deletions += deletions;
+                        changeSet.Files++;
+                    }
                 }
-                table.Write();
             }
-            else if (options.Format == global::Format.Table && options.ByDay)
-            {
-                // List of dates from uniqueCommits first and last commit dates
-                Console.WriteLine("Date Range: " + options.FromDate.ToString("MM/dd/yyyy") + " - " + options.ToDate.ToString("MM/dd/yyyy"));
-                Console.WriteLine("First Commit: " + uniqueCommits.FirstOrDefault()?.Committer.When ?? "");
-                Console.WriteLine("Last Commit: " + uniqueCommits.LastOrDefault()?.Committer.When ?? "");
-                var dateRange = Enumerable.Range(0, 1 + options.ToDate.Subtract(options.FromDate).Days).Select(offset => DateOnly.FromDateTime(options.FromDate.AddDays(offset).DateTime)).ToList();
-
-                WriteTable(mergedAuthorContribs, dateRange, t => t.Lines, options.ShowSummary);
-                WriteTable(mergedAuthorContribs, dateRange, t => t.Files, options.ShowSummary);
-                WriteTable(mergedAuthorContribs, dateRange, t => t.Commits, options.ShowSummary);
-
-            }
-            else if (options.Format == global::Format.Json)
-            {
-                var result = JsonSerializer.Serialize(mergedAuthorContribs);
-                Console.WriteLine(result);
-            }
-            return mergedAuthorContribs;
-
         }
-    }
 
-    public static void WriteTable(IOrderedEnumerable<AuthorContrib> authorContribs, List<DateOnly> dateRange, Expression<Func<Totals, int>> prop, bool showSummary)
-    {
-        var compiled = prop.Compile();
-        string[] baseColumns = [$"Author ({((MemberExpression)prop.Body).Member.Name})"];
-        var columns = baseColumns.Concat(dateRange.Select(d => d.ToString("MM/dd")).ToList()).ToList();
-        columns.Add("Total");
-
-        var table = new ConsoleTable(columns.ToArray());
-        table.Options.EnableCount = false;
-        foreach (var author in authorContribs)
+        if (options.ByDay != null)
         {
-            var values = new List<string>
-                    {
-                        author.Author
-                    }.Concat(dateRange.Select(d => author.TotalsByDate.FirstOrDefault(t => t.Date == d) ?? new Totals()).Select(x =>
-                    {
-                        // return $"{x.Lines:N0} / {x.Files:N0} / {x.Commits:N0}";
-                        return $"{compiled(x):N0}";
-                    }).ToList()).ToList();
-            values.Add(compiled(author.Totals).ToString("N0"));
-            table.AddRow(values.ToArray());
+            TablePrinter.PrintTableByDaySelector(options.ByDay.Value, totals, options.FromDate, options.ShowSummary);
         }
-        if (showSummary)
+        else
         {
-            var values = new List<string>
-                    {
-                        "Project Totals"
-                    }.Concat(dateRange.Select(d => authorContribs.SelectMany(a => a.TotalsByDate).Where(t => t.Date == d).Sum(t => (long?)compiled(t)) ?? 0).Select(x => x.ToString("N0"))).ToList();
-            values.Add(authorContribs.Sum(a => compiled(a.Totals)).ToString("N0"));
-            table.AddRow(values.ToArray());
+            TablePrinter.PrintTableTotalsSelector(totals);
+
         }
-        table.Write();
 
+        return totals.Select(x => x.Value).ToList();
     }
-
 }

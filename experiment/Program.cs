@@ -1,159 +1,79 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
+using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Parsing;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-class Program
+
+// var Version = new Option<bool>("--version", "Show the version information and exit");
+// var From = new Option<string>("--from", "Starting date for commits to be considered");
+// var To = new Option<int>("--to", getDefaultValue: () => 0, "Ending number of days for commits to be considered");
+// var ByDay = new Option<string>("--by-day", "Show results by day [lines, commits, files]");
+// var Format = new Option<string>("--format", getDefaultValue: () => "table", "Format to output results in");
+// var Inverted = new Option<bool>("--inverted", "Invert authors and dates in table");
+// var IgnoreAuthors = new Option<string[]>("--ignore-authors", "Authors to ignore");
+// var IgnoreFiles = new Option<string[]>("--ignore-files", "Files to ignore");
+// var Path = new Argument<string>("path", getDefaultValue: () => ".", "Path to the directory");
+var Version = new Option<bool>("--version", "Show the version information and exit");
+
+var Path = new Argument<string>("path", description: "Path to search for git repositories", getDefaultValue: Directory.GetCurrentDirectory);
+var FromDate = new Option<DateTimeOffset?>("--from", description: "Starting date for commits to be considered",
+parseArgument: (result) =>
 {
-    class ChangeSet
-    {
-        public int Additions { get; set; }
-        public int Deletions { get; set; }
+    var input = result.Tokens.Single().Value;
+    return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.MinValue;
+
+});
+var ToDate = new Option<DateTimeOffset?>("--to", description: "Ending date for commits to be considered",
+parseArgument: (result) =>
+{
+    var input = result.Tokens.Single().Value;
+    return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.Now;
+
+});
+var ByDay = new Option<bool>("--by-day", description: "Show results by day");
+var ShowSummary = new Option<bool>("--show-summary", description: "Show project summary details");
+var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore") { AllowMultipleArgumentsPerToken = true };
+var IgnoreFiles = new Option<string[]>("--ignore-files", description: "Files to ignore") { AllowMultipleArgumentsPerToken = true };
+
+var rootCommand = new RootCommand
+{
+    Version,
+    FromDate,
+    ToDate,
+    ByDay,
+    IgnoreAuthors,
+    IgnoreFiles,
+    Path
+};
+
+var jsonOptions = new JsonSerializerOptions
+{
+    WriteIndented = true,
+    ReferenceHandler = ReferenceHandler.IgnoreCycles,
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+};
+
+rootCommand.SetHandler(async (context) =>
+{
+    var version = context.ParseResult.GetValueForOption(Version);
+    var path = context.ParseResult.GetValueForArgument(Path);
+    if(version) {
+        Console.WriteLine("0.1.0");
+        return;
     }
 
-    class AuthorData
-    {
-        public string Name { get; set; }
-        public Dictionary<string, ChangeSet> ChangeMap { get; set; } = new Dictionary<string, ChangeSet>();
+    if(!await Utils.IsGitDirectoryAsync(path)) {
+        Console.WriteLine("%s is not a git directory", path);
+        return;
     }
 
-    static void Main(string[] args)
-    {
-        var maxDates = 0;
-        if (args.Length < 1 || !int.TryParse(args[0], out maxDates) || maxDates <= 0)
-        {
-            Console.Error.WriteLine("Usage: <executable> <max_dates>");
-            Environment.Exit(2);
-        }
+});
 
-        try
-        {
-            Run(maxDates).Wait();
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine(ex.Message);
-            Environment.Exit(1);
-        }
-    }
-
-    static async Task Run(int maxDates)
-    {
-        var gitCmd = "git";
-        var gitArgs = new[] { "--no-pager", "log", "--all", "--summary", "--numstat", "--format=\"^%C(yellow)%h%C(reset) %C(green)%aI%C(reset) %C(red)%an <%ae>%C(reset) %gs\"" };
-
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = gitCmd,
-                Arguments = string.Join(" ", gitArgs),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            }
-        };
-
-        process.Start();
-
-        using var reader = process.StandardOutput;
-        var commitMap = new HashSet<string>();
-        var totals = new Dictionary<string, AuthorData>();
-
-        AuthorData currentAuthor = null;
-        string currentDate = "";
-        bool skipUntilNextCommit = false;
-
-        while (!reader.EndOfStream)
-        {
-            var line = await reader.ReadLineAsync();
-
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
-
-            if (skipUntilNextCommit && !line.StartsWith("^"))
-                continue;
-
-            if (line.StartsWith("^"))
-            {
-                skipUntilNextCommit = false;
-                var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 3)
-                    throw new Exception($"Invalid author line format: {line}");
-
-                var commit = parts[0].Trim('^');
-                if (!commitMap.Add(commit))
-                {
-                    skipUntilNextCommit = true;
-                    continue;
-                }
-
-                var email = parts[2].Trim('<', '>');
-                if (!totals.TryGetValue(email, out currentAuthor))
-                {
-                    currentAuthor = new AuthorData { Name = parts[2] };
-                    totals[email] = currentAuthor;
-                }
-
-                currentDate = parts[1].Split('T')[0];
-            }
-            else if (char.IsDigit(line[0]) && currentAuthor != null)
-            {
-                var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 2)
-                    throw new Exception($"Invalid totals line format: {line}");
-
-                if (!int.TryParse(parts[0], out int additions))
-                    throw new Exception($"Invalid number for additions: {parts[0]}");
-
-                if (!int.TryParse(parts[1], out int deletions))
-                    throw new Exception($"Invalid number for deletions: {parts[1]}");
-
-                if (!currentAuthor.ChangeMap.TryGetValue(currentDate, out var changeset))
-                {
-                    changeset = new ChangeSet();
-                    currentAuthor.ChangeMap[currentDate] = changeset;
-                }
-
-                changeset.Additions += additions;
-                changeset.Deletions += deletions;
-            }
-        }
-
-        PrintTotals(totals, maxDates);
-    }
-
-    static void PrintTotals(Dictionary<string, AuthorData> totals, int maxDates)
-    {
-        Console.Write("{0,-20}", "Author's Name");
-
-        var dates = Enumerable.Range(0, maxDates)
-                              .Select(i => DateTime.UtcNow.AddDays(-maxDates).AddDays(i).Date)
-                              .OrderBy(date => date)
-                              .ToList();
-
-        foreach (var date in dates)
-            Console.Write($"\t{date:MM/dd}");
-
-        Console.WriteLine("\tTotal");
-
-        foreach (var authorData in totals.Values)
-        {
-            Console.Write("{0,-20}", authorData.Name);
-            var total = 0;
-
-            foreach (var date in dates.Select(d => d.ToString("yyyy-MM-dd")))
-            {
-                authorData.ChangeMap.TryGetValue(date, out var changes);
-                var totalChanges = changes?.Additions + changes?.Deletions ?? 0;
-                total += totalChanges;
-                Console.Write("\t{0}", totalChanges);
-            }
-
-            Console.WriteLine("\t{0}", total);
-        }
-    }
-}
-
+return await new CommandLineBuilder(rootCommand)
+    .UseHelp()
+    .UseSuggestDirective()
+    .UseTypoCorrections()
+    .RegisterWithDotnetSuggest()
+    .Build()
+    .InvokeAsync(args);

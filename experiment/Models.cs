@@ -12,3 +12,12 @@ public class AuthorData
     public string Email { get; set; } = string.Empty;
     public Dictionary<string, ChangeSet> ChangeMap { get; set; } = new Dictionary<string, ChangeSet>();
 }
+
+enum TableOption
+{
+    None,
+    Lines,
+    Files,
+    Commits
+    // Add other options as needed
+}

@@ -20,7 +20,7 @@ public class Options
         };
         return result;
     }
-    public bool ByDay { get; set; } = false;
+    public ByDay? ByDay { get; set; }
     public DateTimeOffset FromDate { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset ToDate { get; set; } = DateTimeOffset.Now;
     public string Path { get; set; } = "";
@@ -59,7 +59,7 @@ public class ConfigOptions
 
     }
     public string FromDate { get; set; } = "";
-    public bool ByDay { get; set; } = false;
+    public ByDay? ByDay { get; set; }
     public string ToDate { get; set; } = "";
     public string Path { get; set; } = "";
     public string Mailmap { get; set; } = "";
@@ -67,6 +67,15 @@ public class ConfigOptions
     public string[] IgnoreAuthors { get; set; } = [];
     public string[] IgnoreFiles { get; set; } = [];
 
+}
+
+public enum ByDay {
+    Lines,
+    Commits,
+    Files,
+    LinesFlipped,
+    CommitsFlipped,
+    FilesFlipped,
 }
 
 public enum Format

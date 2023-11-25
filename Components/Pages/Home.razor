@@ -83,23 +83,22 @@
             YAxisTicks = 1
         };
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
+        await base.OnInitializedAsync();
         var days = (DateTime.Now - Options.FromDate).Days;
         FromDate = Options.FromDate.Date;
         ToDate = Options.ToDate.Date;
-
-        UpdateAuthors(Array.Empty<string>());
+        await UpdateAuthors(Array.Empty<string>());
     }
 
-    public void UpdateAuthors(IEnumerable<string> authors)
+    public async Task UpdateAuthors(IEnumerable<string> authors)
     {
         SelectedAuthors = authors;
 
         var days = (ToDate - FromDate).Days + 1;
         XAxisLabels = Enumerable.Range(0, days).Select(i => FromDate.AddDays(i).ToString("MM/dd")).ToArray();
-        var results = Work.DoWork(new Options
+        var results = await Work.DoWork(new Options
             {
 
                 Fetch = false,
@@ -112,12 +111,12 @@
                 Format = global::Format.None
             });
 
-        var uniqueAuthors = results.Select(x => x.Author).Distinct().ToList();
+        var uniqueAuthors = results?.Select(x => x.Name).Distinct().ToList();
         if (SelectedAuthors.Count() > 0)
         {
-            uniqueAuthors = uniqueAuthors.Where(x => SelectedAuthors.Contains(x)).ToList();
+            uniqueAuthors = uniqueAuthors?.Where(x => SelectedAuthors.Contains(x)).ToList();
         }
-        if (Authors.Count() == 0)
+        if (uniqueAuthors != null && Authors.Count() == 0)
         {
             Authors = uniqueAuthors;
         }
@@ -129,7 +128,8 @@
         {
             var data = dateRange.Select(d =>
     {
-    var num = results.FirstOrDefault(x => x.Author == author)?.TotalsByDate.Where(x => x.Date == d).Sum(x => x.Lines);
+    var num = results?.FirstOrDefault(x => x.Name == author)?.ChangeMap.Where(x => DateOnly.Parse(x.Key) == d).Sum(x =>
+    x.Value.Additions + x.Value.Deletions);
     return num ?? 0d;
             }).ToArray();
 
@@ -144,7 +144,8 @@
         {
             var data = dateRange.Select(d =>
     {
-    var num = results.FirstOrDefault(x => x.Author == author)?.TotalsByDate.Where(x => x.Date == d).Sum(x => x.Files);
+    var num = results?.FirstOrDefault(x => x.Name == author)?.ChangeMap.Where(x => DateOnly.Parse(x.Key) == d).Sum(x =>
+    x.Value.Files);
     return num ?? 0d;
             }).ToArray();
             return new ChartSeries
@@ -158,7 +159,8 @@
         {
             var data = dateRange.Select(d =>
     {
-    var num = results.FirstOrDefault(x => x.Author == author)?.TotalsByDate.Where(x => x.Date == d).Sum(x => x.Commits);
+    var num = results?.FirstOrDefault(x => x.Name == author)?.ChangeMap.Where((x) => DateOnly.Parse(x.Key) == d).Sum(x =>
+    x.Value.Commits);
     return num ?? 0d;
             }).ToArray();
             return new ChartSeries
