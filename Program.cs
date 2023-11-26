@@ -69,6 +69,7 @@ root.SetHandler(async (context) =>
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
         ByDay = context.ParseResult.GetValueForOption(ByDay),
         Path = context.ParseResult.GetValueForArgument(Path),
+        Format = context.ParseResult.GetValueForOption(Format),
         ShowSummary = context.ParseResult.GetValueForOption(ShowSummary),
         IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
         IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),

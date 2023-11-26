@@ -19,20 +19,20 @@
                 <MudSelectItem Value="@author">@author</MudSelectItem>
             }
         </MudSelect>
-        <MudDatePicker class="flex-none" Label="From Date" Date="FromDate" DateChanged="@((date) => {
+        <MudDatePicker class="flex-none" Label="From Date" Date="FromDate" DateChanged="@(async (date) => {
         if (date.HasValue)
         {
             FromDate = date.Value;
-            UpdateAuthors(SelectedAuthors);
+            await UpdateAuthors(SelectedAuthors);
         }
 
         })" />
-        <MudDatePicker class="flex-none" Label="To Date" Date="ToDate" DateChanged="@((date) => {
+        <MudDatePicker class="flex-none" Label="To Date" Date="ToDate" DateChanged="@(async (date) => {
 
         if (date.HasValue)
         {
             ToDate = date.Value;
-            UpdateAuthors(SelectedAuthors);
+            await UpdateAuthors(SelectedAuthors);
         }
         })" />
 
@@ -98,7 +98,7 @@
 
         var days = (ToDate - FromDate).Days + 1;
         XAxisLabels = Enumerable.Range(0, days).Select(i => FromDate.AddDays(i).ToString("MM/dd")).ToArray();
-        var results = await Work.DoWork(new Options
+        var results = await Work.DoWork_Internal(new Options
             {
 
                 Fetch = false,
@@ -123,6 +123,11 @@
 
         var dateRange = Enumerable.Range(0, 1 + ToDate.Subtract(FromDate).Days).Select(offset =>
         DateOnly.FromDateTime(FromDate.AddDays(offset).Date)).ToList();
+
+        if(uniqueAuthors == null)
+        {
+            return;
+        }
 
         LinesOfCode = uniqueAuthors.Select(author =>
         {

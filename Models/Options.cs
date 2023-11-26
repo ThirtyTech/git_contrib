@@ -82,5 +82,6 @@ public enum Format
 {
     Table,
     Json,
+    Chart,
     None
 }

@@ -1,8 +1,8 @@
 using System.Reactive.Linq;
-using System.Text;
 using System.Text.Json;
 using CliWrap;
 using CliWrap.Buffered;
+using Spectre.Console;
 
 public static class Work
 {
@@ -29,12 +29,54 @@ public static class Work
         ];
 
 
+    public static Color[] Colors = [
+            Color.Red,
+            Color.Blue,
+            Color.Yellow,
+            Color.Green,
+            Color.Orange1,
+            Color.Purple,
+            Color.Pink1,
+            Color.Teal,
+            Color.Turquoise2,
+            Color.Lime,
+            Color.SkyBlue1,
+            Color.Navy,
+            Color.Olive,
+            Color.Maroon,
+            Color.LightCoral,
+            Color.Aqua,
+            Color.Violet,
+            Color.SandyBrown,
+            Color.Magenta1
+    ];
+
+
     public static readonly int MaxConcurrency = Environment.ProcessorCount - 1;
 
-    public static async Task<IEnumerable<AuthorData>?> DoWork(Options options)
+    public static async Task<IEnumerable<AuthorData>?> DoWork(Options options) =>
+        Console.IsOutputRedirected ?
+        await DoWork_Internal(options) :
+        await AnsiConsole.Status().StartAsync("Processing git log...", async ctx =>
+    {
+        ctx.SpinnerStyle(Style.Parse("yellow"));
+        ctx.Spinner(Spinner.Known.Dots);
+        var results = await DoWork_Internal(options);
+        if (results == null)
+        {
+            ctx.Status("No results");
+        }
+        else
+        {
+            ctx.Status("Done");
+        }
+        return results;
+    });
+
+    public static async Task<IEnumerable<AuthorData>?> DoWork_Internal(Options options)
     {
 
-        if (options.Format != global::Format.None)
+        if (options.Format == global::Format.Table)
         {
             Console.WriteLine("Processing directory: " + options.Path);
         }
@@ -62,7 +104,12 @@ public static class Work
         var buffer = new MemoryStream();
 
         string gitCmd = "git";
-        var gitArgs = new List<string> { "--no-pager", "log", "--branches", "--remotes", "--summary", "--numstat", "--mailmap", "--no-merges", "--since", options.FromDate.AddDays(-1).ToString("yyyy-MM-dd"), "--format=^%h|%aI|%aN|<%aE>" };
+        var gitArgs = new List<string> { "--no-pager", "log", "--branches", "--remotes", "--summary", "--numstat", "--mailmap", "--no-merges", "--format=^%h|%aI|%aN|<%aE>" };
+        if (options.FromDate != DateTime.MinValue)
+        {
+            gitArgs.Add("--since");
+            gitArgs.Add(options.FromDate.ToString("yyyy-MM-dd"));
+        }
 
         var gitCmdResult = await Cli.Wrap(gitCmd)
             .WithValidation(CommandResultValidation.ZeroExitCode)
@@ -95,7 +142,11 @@ public static class Work
                     var date = parts[1];
                     var author = parts[2];
                     var email = parts[3].Trim('<', '>');
-                    var authorDate = DateTimeOffset.Parse(date);
+                    var authorDateParseError = DateTimeOffset.TryParse(date, out var authorDate);
+                    if (!authorDateParseError)
+                    {
+                        throw new Exception($"Invalid date format in line: {line}");
+                    }
                     var authorDateStr = authorDate.ToString("yyyy-MM-dd");
                     if (!dateMap.Contains(authorDateStr))
                     {
@@ -170,14 +221,44 @@ public static class Work
             }
         }
 
-        if (options.ByDay != null)
+        if (options.Format == global::Format.Table)
         {
-            TablePrinter.PrintTableByDaySelector(options.ByDay.Value, totals, options.FromDate, options.ShowSummary);
-        }
-        else
-        {
-            TablePrinter.PrintTableTotalsSelector(totals);
+            if (options.ByDay != null)
+            {
+                TablePrinter.PrintTableByDaySelector(options.ByDay.Value, totals, options.FromDate, options.ShowSummary);
+            }
+            else
+            {
+                TablePrinter.PrintTableTotalsSelector(totals);
 
+            }
+
+        }
+        else if (options.Format == global::Format.Json)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(totals, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
+        }
+        else if (options.Format == global::Format.Chart)
+        {
+            var breakdown = new BreakdownChart();
+            var random = new Random();
+            breakdown.UseValueFormatter(x => x.ToString("N0"));
+
+            // Add all authors and line totals to the chart
+            int index = 0;
+            foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)))
+            {
+                var authorName = author.Value.Name;
+                var authorEmail = author.Value.Email;
+                var authorData = author.Value.ChangeMap;
+                var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
+                breakdown.AddItem(authorName, authorTotal, Colors[index % 20]);
+                index++;
+            }
+            AnsiConsole.Write(breakdown);
         }
 
         return totals.Select(x => x.Value).ToList();

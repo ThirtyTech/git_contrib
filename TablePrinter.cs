@@ -1,7 +1,3 @@
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using ConsoleTables;
 using Spectre.Console;
 
@@ -65,8 +61,6 @@ public static class TablePrinter
             totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)).ToString("N0")
         ));
 
-        int totalCommits = 0, totalFiles = 0, totalLines = 0;
-
         foreach (var authorData in totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)))
         {
             var authorTotalCommits = authorData.ChangeMap.Values.Sum(c => c.Commits);
@@ -74,18 +68,6 @@ public static class TablePrinter
             var authorTotalLines = authorData.ChangeMap.Values.Sum(c => c.Additions + c.Deletions);
 
             table.AddRow(authorData.Name, authorTotalCommits.ToString("N0"), authorTotalFiles.ToString("N0"), authorTotalLines.ToString("N0"));
-
-            if (!hideSummary)
-            {
-                totalCommits += authorTotalCommits;
-                totalFiles += authorTotalFiles;
-                totalLines += authorTotalLines;
-            }
-        }
-
-        if (!hideSummary)
-        {
-            table.AddRow("Summary Totals", totalCommits.ToString("N0"), totalFiles.ToString("N0"), totalLines.ToString("N0"));
         }
 
         AnsiConsole.Write(table);
