@@ -274,7 +274,8 @@ public static class Work
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
                 var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
-                chart.AddItem(authorName, authorTotal, Colors[index % 20]);
+                var item = new BarChartItem(authorName, authorTotal, Colors[index % 20], Colors[index % 20]);
+                chart.AddItem(item);
                 index++;
             }
             AnsiConsole.Write(chart);
