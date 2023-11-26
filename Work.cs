@@ -243,9 +243,9 @@ public static class Work
         }
         else if (options.Format == global::Format.Chart)
         {
-            var breakdown = new BreakdownChart();
+            var chart = new BreakdownChart();
             var random = new Random();
-            breakdown.UseValueFormatter(x => x.ToString("N0"));
+            chart.UseValueFormatter(x => x.ToString("N0"));
 
             // Add all authors and line totals to the chart
             int index = 0;
@@ -255,10 +255,29 @@ public static class Work
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
                 var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
-                breakdown.AddItem(authorName, authorTotal, Colors[index % 20]);
+                chart.AddItem(authorName, authorTotal, Colors[index % 20]);
                 index++;
             }
-            AnsiConsole.Write(breakdown);
+            AnsiConsole.Write(chart);
+        }
+        else if (options.Format == global::Format.BarChart)
+        {
+            var chart = new BarChart();
+            chart.UseValueFormatter(x => x.ToString("N0"));
+            var random = new Random();
+
+            // Add all authors and line totals to the chart
+            int index = 0;
+            foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)))
+            {
+                var authorName = author.Value.Name;
+                var authorEmail = author.Value.Email;
+                var authorData = author.Value.ChangeMap;
+                var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
+                chart.AddItem(authorName, authorTotal, Colors[index % 20]);
+                index++;
+            }
+            AnsiConsole.Write(chart);
         }
 
         return totals.Select(x => x.Value).ToList();
