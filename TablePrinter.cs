@@ -30,7 +30,7 @@ public static class TablePrinter
         {
             sorted = sorted.Take(limit.Value);
         }
-        if(limit.HasValue && reverse)
+        if (limit.HasValue && reverse)
         {
             sorted = sorted.TakeLast(limit.Value);
         }
@@ -87,7 +87,7 @@ public static class TablePrinter
         {
             sorted = sorted.Take(limit.Value);
         }
-        if(limit.HasValue && reverse)
+        if (limit.HasValue && reverse)
         {
             sorted = sorted.TakeLast(limit.Value);
         }
@@ -129,15 +129,19 @@ public static class TablePrinter
         table.Options.EnableCount = false;
         var days = (DateTime.Now - fromDate).Days;
 
-        // Add Date Columns
         for (int i = 1; i <= days; i++)
         {
             table.AddColumn([fromDate.AddDays(i).ToString("MM-dd")]);
         }
         table.AddColumn(["Total"]);
 
-        // Adding rows
-        foreach (var authorData in totals.Values)
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        if (reverse)
+        {
+            sorted = sorted.Reverse();
+        }
+
+        foreach (var authorData in sorted)
         {
             List<string> row = new List<string> { authorData.Name };
             var runningTotal = 0;
@@ -167,10 +171,8 @@ public static class TablePrinter
 
         table.Configure(o => o.NumberAlignment = Alignment.Right);
 
-        // Add Footer
         if (!hideSummary)
         {
-            // Add summary row
             List<string> row = new List<string> { "Summary" };
             var grandTotal = 0;
             for (int i = 1; i <= days; i++)
@@ -200,13 +202,14 @@ public static class TablePrinter
         table.Title($"{byDay} Changed by Author");
         table.Border(!Console.IsOutputRedirected ? TableBorder.Rounded : TableBorder.Ascii);
         table.BorderStyle = Style.Parse("red");
-        // table.Width(Console.WindowWidth);
         table.AddColumn(new TableColumn("Author").NoWrap().Footer("Summary"));
         table.ShowFooters = !hideSummary;
         var days = (DateTime.Now - fromDate).Days;
         for (int i = 1; i <= days; i++)
         {
-            table.AddColumn(new TableColumn(fromDate.AddDays(i).ToString("MM-dd")).Alignment(Justify.Right).Footer(
+            var date = fromDate.AddDays(i).ToString("MM-dd");
+            var dayOfWeek = fromDate.AddDays(i).DayOfWeek.ToString().Substring(0, 2);
+            table.AddColumn(new TableColumn($"{date}\n{dayOfWeek}").Alignment(Justify.Right).Footer(
                 totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Additions + x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Deletions : 0).ToString("N0")
             ));
         }
@@ -258,7 +261,6 @@ public static class TablePrinter
         table.Title($"{byDay} Changed by Author");
         table.Border(TableBorder.Rounded);
         table.BorderStyle = Style.Parse("red");
-        // table.Width(Console.WindowWidth);
         table.AddColumn(new TableColumn("Date").Footer("Summary"));
         table.ShowFooters = !hideSummary;
 
@@ -283,18 +285,20 @@ public static class TablePrinter
 
         for (int i = 1; i <= days; i++)
         {
-            List<string> row = [fromDate.AddDays(i).ToString("MM-dd")];
+            var date = fromDate.AddDays(i).ToString("MM-dd");
+            var dayOfWeek = fromDate.AddDays(i).DayOfWeek.ToString().Substring(0, 2);
+            List<string> row = [$"{date} {dayOfWeek}"];
             var runningTotal = 0;
             foreach (var authorData in totals.Values)
             {
-                var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
-                if (authorData.ChangeMap.ContainsKey(date))
+                var authorDate = fromDate.AddDays(i).ToString("yyyy-MM-dd");
+                if (authorData.ChangeMap.ContainsKey(authorDate))
                 {
                     var total = byDay switch
                     {
-                        global::ByDay.LinesFlipped => authorData.ChangeMap[date].Additions + authorData.ChangeMap[date].Deletions,
-                        global::ByDay.FilesFlipped => authorData.ChangeMap[date].Files,
-                        global::ByDay.CommitsFlipped => authorData.ChangeMap[date].Commits,
+                        global::ByDay.LinesFlipped => authorData.ChangeMap[authorDate].Additions + authorData.ChangeMap[authorDate].Deletions,
+                        global::ByDay.FilesFlipped => authorData.ChangeMap[authorDate].Files,
+                        global::ByDay.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
                         _ => 0,
                     };
                     runningTotal += total;

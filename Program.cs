@@ -73,6 +73,7 @@ root.SetHandler(async (context) =>
         Path = context.ParseResult.GetValueForArgument(Path),
         Format = context.ParseResult.GetValueForOption(Format),
         Reverse = context.ParseResult.GetValueForOption(Reverse),
+        Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? "",
         AuthorLimit = context.ParseResult.GetValueForOption(AuthorLimit),
         ShowSummary = context.ParseResult.GetValueForOption(ShowSummary),
         IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),

@@ -88,11 +88,15 @@ public static class Work
 
         int maxDates = (int)Math.Round((DateTime.Now - options.FromDate).TotalDays);
 
-        var dates = Enumerable.Range(0, maxDates)
+        var dates = Enumerable.Range(1, maxDates)
                               .Select(i => options.FromDate.AddDays(i).ToString("yyyy-MM-dd"))
                               .ToList();
 
         var dateMap = dates.ToHashSet();
+        Console.WriteLine(JsonSerializer.Serialize(dateMap, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        }));
 
         await Cli.Wrap("git")
             .WithValidation(CommandResultValidation.None)
