@@ -93,10 +93,6 @@ public static class Work
                               .ToList();
 
         var dateMap = dates.ToHashSet();
-        Console.WriteLine(JsonSerializer.Serialize(dateMap, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        }));
 
         await Cli.Wrap("git")
             .WithValidation(CommandResultValidation.None)

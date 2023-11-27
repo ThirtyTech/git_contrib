@@ -66,7 +66,6 @@ public static class TablePrinter
         table.Title("Totals By Author");
         table.Border(TableBorder.Rounded);
         table.BorderStyle = Style.Parse("red");
-        // table.Width(Console.WindowWidth);
         table.AddColumn(new TableColumn("Author").Footer("Summary Totals"));
         table.AddColumn(new TableColumn("Commits").Alignment(Justify.Right).Footer(
             totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Commits)).ToString("N0")
@@ -199,7 +198,7 @@ public static class TablePrinter
     public static void PrintTableByDay(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
     {
         var table = new Table();
-        table.Title($"{byDay} Changed by Author");
+        table.Title($"{byDay} by Author");
         table.Border(!Console.IsOutputRedirected ? TableBorder.Rounded : TableBorder.Ascii);
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Author").NoWrap().Footer("Summary"));
@@ -258,7 +257,7 @@ public static class TablePrinter
     {
         var days = (DateTime.Now - fromDate).Days;
         var table = new Table();
-        table.Title($"{byDay} Changed by Author");
+        table.Title($"{byDay} by Author");
         table.Border(TableBorder.Rounded);
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Date").Footer("Summary"));
