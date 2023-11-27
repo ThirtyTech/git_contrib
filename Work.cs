@@ -223,7 +223,6 @@ public static class Work
 
         if (options.Format == global::Format.Table)
         {
-
             if (options.ByDay != null)
             {
                 TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ShowSummary);

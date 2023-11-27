@@ -67,9 +67,11 @@ root.SetHandler(async (context) =>
         Console.WriteLine($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version}");
         return;
     }
+    var byDay = context.ParseResult.GetValueForOption(ByDay);
+    var fromDate = context.ParseResult.GetValueForOption(FromDate);
     var options = new Options
     {
-        FromDate = context.ParseResult.GetValueForOption(FromDate) ?? DateTimeOffset.MinValue,
+        FromDate = fromDate.HasValue ? fromDate.Value : byDay.HasValue && !fromDate.HasValue ? DateTimeOffset.Now.AddDays(-7) : DateTimeOffset.MinValue,
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
         ByDay = context.ParseResult.GetValueForOption(ByDay),
         Path = context.ParseResult.GetValueForArgument(Path),
