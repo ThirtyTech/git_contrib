@@ -54,11 +54,7 @@ var Config = new Command("config", "Configure defaults for the tool")
     ConfigArg
 };
 
-var Chart = new Command("chart", "Launch interactive server to view results") { Path, IgnoreAuthors, FromDate, ToDate, Mailmap, IgnoreFiles };
-
 root.AddCommand(Config);
-// root.AddCommand(Plot);
-root.AddCommand(Chart);
 
 root.SetHandler(async (context) =>
 {
@@ -90,20 +86,6 @@ Config.SetHandler(async (options) =>
 {
 
     await Work.DoWork(Options.Convert(options.ParseResult.GetValueForArgument(ConfigArg)));
-});
-
-Chart.SetHandler((context) =>
-{
-    var options = new Options
-    {
-        FromDate = context.ParseResult.GetValueForOption(FromDate) ?? DateTimeOffset.MinValue,
-        ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
-        Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? string.Empty,
-        Path = context.ParseResult.GetValueForArgument(Path),
-        IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
-        IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),
-    };
-    ChartServer.DoWork(options);
 });
 
 return await new CommandLineBuilder(root)

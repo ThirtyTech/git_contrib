@@ -1,4 +1,3 @@
-using System.Reactive.Linq;
 using System.Text.Json;
 using CliWrap;
 using CliWrap.Buffered;

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Version>0.1.1</Version>
     <OutputType>Exe</OutputType>
@@ -17,24 +17,14 @@
   <ItemGroup>
     <PackageReference Include="cliwrap" Version="3.6.4" />
     <PackageReference Include="ConsoleTables" Version="2.6.1" />
-    <PackageReference Include="humanizer" Version="2.14.1" />
     <PackageReference Include="Mapster" Version="7.4.0" />
-    <PackageReference Include="MudBlazor" Version="6.11.0" />
-    <PackageReference Include="Kurukuru" Version="1.4.2" />
-    <PackageReference Include="ShellProgressBar" Version="5.2.0" />
     <PackageReference Include="Spectre.Console" Version="0.48.0" />
     <PackageReference Include="System.Commandline" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="System.Reactive" Version="6.0.0" />
-    <PackageReference Include="System.Reactive.Linq" Version="6.0.0" />
   </ItemGroup>
 
   <!-- <ItemGroup>
     <ProjectReference Include="..\..\github\spectre.console\src\Spectre.Console\Spectre.Console.csproj" />
   </ItemGroup> -->
-
-  <ItemGroup>
-    <Compile Remove="experiment/**" />
-  </ItemGroup>
 
   <ItemGroup>
     <Content Remove="Examples\**" />
