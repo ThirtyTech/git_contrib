@@ -140,7 +140,7 @@ public static class Work
                     var parts = line.Split('|');
                     var commit = parts[0][1..];
                     var date = parts[1];
-                    var author = parts[2];
+                    var author = parts[2].Replace("[", "{").Replace("]", "}");
                     var email = parts[3].Trim('<', '>');
                     var authorDateParseError = DateTimeOffset.TryParse(date, out var authorDate);
                     if (!authorDateParseError)
@@ -223,16 +223,15 @@ public static class Work
 
         if (options.Format == global::Format.Table)
         {
+
             if (options.ByDay != null)
             {
-                TablePrinter.PrintTableByDaySelector(options.ByDay.Value, totals, options.FromDate, options.ShowSummary);
+                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ShowSummary);
             }
             else
             {
-                TablePrinter.PrintTableTotalsSelector(totals);
-
+                TablePrinter.PrintTableTotalsSelector(totals, options.ShowSummary, options.Reverse, options.AuthorLimit);
             }
-
         }
         else if (options.Format == global::Format.Json)
         {
@@ -255,7 +254,7 @@ public static class Work
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
                 var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
-                chart.AddItem(authorName, authorTotal, Colors[index % 20]);
+                chart.AddItem(authorName, authorTotal, Colors[index % Colors.Length]);
                 index++;
             }
             AnsiConsole.Write(chart);
@@ -263,18 +262,24 @@ public static class Work
         else if (options.Format == global::Format.BarChart)
         {
             var chart = new BarChart();
-            chart.UseValueFormatter(x => x.ToString("N0"));
+            // chart.UseValueFormatter(x => x.ToString("N0"));
             var random = new Random();
 
             // Add all authors and line totals to the chart
             int index = 0;
-            foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)))
+            var sorted = totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions));
+            if (options.Reverse)
+            {
+                sorted = totals.OrderBy(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions));
+            }
+            foreach (var author in sorted)
             {
                 var authorName = author.Value.Name;
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
                 var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
-                var item = new BarChartItem(authorName, authorTotal, Colors[index % 20], Colors[index % 20]);
+                var item = new BarChartItem(authorName, authorTotal, Colors[index % Colors.Length]);
+                // var item = new BarChartItem(authorName, authorTotal, Colors[index % 20], Colors[index % 20]);
                 chart.AddItem(item);
                 index++;
             }

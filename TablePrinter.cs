@@ -1,23 +1,40 @@
+using System.Text;
 using ConsoleTables;
 using Spectre.Console;
 
 public static class TablePrinter
 {
-    public static void PrintTableTotalsSelector(Dictionary<string, AuthorData> totals, bool hideSummary = false) {
-        if (Console.IsOutputRedirected) {
-            PrintTableTotalsPiped(totals, hideSummary);
-        } else {
-            PrintTableTotals(totals, hideSummary);
+    public static void PrintTableTotalsSelector(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
+    {
+        if (Console.IsOutputRedirected)
+        {
+            PrintTableTotalsPiped(totals, hideSummary, reverse, limit);
+        }
+        else
+        {
+            PrintTableTotals(totals, hideSummary, reverse, limit);
         }
     }
-    private static void PrintTableTotalsPiped(Dictionary<string, AuthorData> totals, bool hideSummary = false)
+    private static void PrintTableTotalsPiped(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
     {
         var table = new ConsoleTable("Author", "Commits", "Files", "Lines");
         table.Options.EnableCount = false;
 
         int totalCommits = 0, totalFiles = 0, totalLines = 0;
-
-        foreach (var authorData in totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)))
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        if (reverse)
+        {
+            sorted = sorted.Reverse();
+        }
+        if (limit.HasValue && !reverse)
+        {
+            sorted = sorted.Take(limit.Value);
+        }
+        if(limit.HasValue && reverse)
+        {
+            sorted = sorted.TakeLast(limit.Value);
+        }
+        foreach (var authorData in sorted)
         {
             var authorTotalCommits = authorData.ChangeMap.Values.Sum(c => c.Commits);
             var authorTotalFiles = authorData.ChangeMap.Values.Sum(c => c.Files);
@@ -42,7 +59,7 @@ public static class TablePrinter
     }
 
 
-    private static void PrintTableTotals(Dictionary<string, AuthorData> totals, bool hideSummary = false)
+    private static void PrintTableTotals(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
     {
         var table = new Table();
         table.ShowFooters = !hideSummary;
@@ -61,7 +78,20 @@ public static class TablePrinter
             totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)).ToString("N0")
         ));
 
-        foreach (var authorData in totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)))
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        if (reverse)
+        {
+            sorted = sorted.Reverse();
+        }
+        if (limit.HasValue && !reverse)
+        {
+            sorted = sorted.Take(limit.Value);
+        }
+        if(limit.HasValue && reverse)
+        {
+            sorted = sorted.TakeLast(limit.Value);
+        }
+        foreach (var authorData in sorted)
         {
             var authorTotalCommits = authorData.ChangeMap.Values.Sum(c => c.Commits);
             var authorTotalFiles = authorData.ChangeMap.Values.Sum(c => c.Files);
@@ -73,27 +103,27 @@ public static class TablePrinter
         AnsiConsole.Write(table);
     }
 
-    public static void PrintTableByDaySelector(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false)
+    public static void PrintTableByDaySelector(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
     {
         if (byDay.ToString().Contains("Flipped"))
         {
-            PrintTableByDayFlipped(byDay, totals, fromDate, hideSummary);
+            PrintTableByDayFlipped(byDay, totals, fromDate, hideSummary, reverse);
         }
         else
         {
             if (Console.IsOutputRedirected)
             {
-                PrintTableByDayPiped(byDay, totals, fromDate, hideSummary);
+                PrintTableByDayPiped(byDay, totals, fromDate, hideSummary, reverse);
             }
             else
             {
-                PrintTableByDay(byDay, totals, fromDate, hideSummary);
+                PrintTableByDay(byDay, totals, fromDate, hideSummary, reverse);
             }
         }
 
     }
 
-    private static void PrintTableByDayPiped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false)
+    private static void PrintTableByDayPiped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
     {
         var table = new ConsoleTable("Author");
         table.Options.EnableCount = false;
@@ -107,7 +137,7 @@ public static class TablePrinter
         table.AddColumn(["Total"]);
 
         // Adding rows
-        foreach (var authorData in totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)))
+        foreach (var authorData in totals.Values)
         {
             List<string> row = new List<string> { authorData.Name };
             var runningTotal = 0;
@@ -164,9 +194,8 @@ public static class TablePrinter
     }
 
 
-    public static void PrintTableByDay(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false)
+    public static void PrintTableByDay(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
     {
-
         var table = new Table();
         table.Title($"{byDay} Changed by Author");
         table.Border(!Console.IsOutputRedirected ? TableBorder.Rounded : TableBorder.Ascii);
@@ -185,7 +214,12 @@ public static class TablePrinter
             totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)).ToString("N0")
         ));
 
-        foreach (var authorData in totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)))
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        if (reverse)
+        {
+            sorted = sorted.Reverse();
+        }
+        foreach (var authorData in sorted)
         {
             List<string> row = [authorData.Name];
             var runningTotal = 0;
@@ -217,9 +251,8 @@ public static class TablePrinter
     }
 
 
-    public static void PrintTableByDayFlipped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false)
+    public static void PrintTableByDayFlipped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
     {
-
         var days = (DateTime.Now - fromDate).Days;
         var table = new Table();
         table.Title($"{byDay} Changed by Author");
@@ -230,7 +263,7 @@ public static class TablePrinter
         table.ShowFooters = !hideSummary;
 
         var grandTotal = 0;
-        foreach (var authorData in totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)))
+        foreach (var authorData in totals.Values)
         {
             var column = new TableColumn(authorData.Name).Alignment(Justify.Right);
             column.Footer(authorData.ChangeMap.Sum(x =>
@@ -252,7 +285,7 @@ public static class TablePrinter
         {
             List<string> row = [fromDate.AddDays(i).ToString("MM-dd")];
             var runningTotal = 0;
-            foreach (var authorData in totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)))
+            foreach (var authorData in totals.Values)
             {
                 var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
                 if (authorData.ChangeMap.ContainsKey(date))
