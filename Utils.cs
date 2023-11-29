@@ -50,13 +50,17 @@ public static class Utils
     public static DateTime FindLastMonday()
     {
         var today = DateTime.Today;
-        int daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
-        if (daysUntilMonday == 0)
+        int daysSinceMonday = (int)today.DayOfWeek - (int)DayOfWeek.Monday;
+
+        if (daysSinceMonday < 0)
         {
-            daysUntilMonday = 7; // If today is Monday, find next Monday (7 days ahead)
+            // If today is before Monday in the current week, go back to the previous week
+            daysSinceMonday += 7;
         }
-        return today.AddDays(daysUntilMonday);
+
+        return today.AddDays(-daysSinceMonday);
     }
+
     public static bool TryParseHumanReadableDateTimeOffset(string input, out DateTimeOffset date)
     {
         date = DateTimeOffset.MinValue;
