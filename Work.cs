@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CliWrap;
 using CliWrap.Buffered;
 using Spectre.Console;

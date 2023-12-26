@@ -50,6 +50,7 @@ public static class Utils
     public static DateTime FindLastMonday()
     {
         var today = DateTime.Today;
+
         int daysSinceMonday = (int)today.DayOfWeek - (int)DayOfWeek.Monday;
 
         if (daysSinceMonday < 0)
@@ -58,7 +59,7 @@ public static class Utils
             daysSinceMonday += 7;
         }
 
-        return today.AddDays(-daysSinceMonday);
+        return today.AddDays(-daysSinceMonday - 1);
     }
 
     public static bool TryParseHumanReadableDateTimeOffset(string input, out DateTimeOffset date)
