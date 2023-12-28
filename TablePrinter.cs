@@ -21,7 +21,7 @@ public static class TablePrinter
         table.Options.EnableCount = false;
 
         int totalCommits = 0, totalFiles = 0, totalLines = 0;
-        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
         if (reverse)
         {
             sorted = sorted.Reverse();
@@ -36,9 +36,9 @@ public static class TablePrinter
         }
         foreach (var authorData in sorted)
         {
-            var authorTotalCommits = authorData.ChangeMap.Values.Sum(c => c.Commits);
-            var authorTotalFiles = authorData.ChangeMap.Values.Sum(c => c.Files);
-            var authorTotalLines = authorData.ChangeMap.Values.Sum(c => c.Additions + c.Deletions);
+            var authorTotalCommits = authorData.TotalCommits;
+            var authorTotalFiles = authorData.UniqueFiles;
+            var authorTotalLines = authorData.TotalLines;
 
             table.AddRow(authorData.Name, authorTotalCommits.ToString("N0"), authorTotalFiles.ToString("N0"), authorTotalLines.ToString("N0"));
 
@@ -61,23 +61,25 @@ public static class TablePrinter
 
     private static void PrintTableTotals(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
     {
-        var table = new Table();
-        table.ShowFooters = !hideSummary;
+        var table = new Table
+        {
+            ShowFooters = !hideSummary
+        };
         table.Title("Totals By Author");
         table.Border(TableBorder.Rounded);
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Author").Footer("Summary Totals"));
         table.AddColumn(new TableColumn("Commits").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Commits)).ToString("N0")
+            totals.Values.Sum(x => x.TotalCommits).ToString("N0")
         ));
         table.AddColumn(new TableColumn("Files").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Files)).ToString("N0")
+            totals.Values.Sum(x => x.UniqueFiles).ToString("N0")
         ));
         table.AddColumn(new TableColumn("Lines").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)).ToString("N0")
+            totals.Values.Sum(x => x.TotalLines).ToString("N0")
         ));
 
-        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
         if (reverse)
         {
             sorted = sorted.Reverse();
@@ -92,9 +94,9 @@ public static class TablePrinter
         }
         foreach (var authorData in sorted)
         {
-            var authorTotalCommits = authorData.ChangeMap.Values.Sum(c => c.Commits);
-            var authorTotalFiles = authorData.ChangeMap.Values.Sum(c => c.Files);
-            var authorTotalLines = authorData.ChangeMap.Values.Sum(c => c.Additions + c.Deletions);
+            var authorTotalCommits = authorData.TotalCommits;
+            var authorTotalFiles = authorData.UniqueFiles;
+            var authorTotalLines = authorData.TotalLines;
 
             table.AddRow(authorData.Name, authorTotalCommits.ToString("N0"), authorTotalFiles.ToString("N0"), authorTotalLines.ToString("N0"));
         }
@@ -134,7 +136,7 @@ public static class TablePrinter
         }
         table.AddColumn(["Total"]);
 
-        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
         if (reverse)
         {
             sorted = sorted.Reverse();
@@ -151,7 +153,7 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::ByDay.Lines => authorData.ChangeMap[date].Additions + authorData.ChangeMap[date].Deletions,
+                        global::ByDay.Lines => authorData.ChangeMap[date].Lines,
                         global::ByDay.Files => authorData.ChangeMap[date].Files,
                         global::ByDay.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
@@ -179,7 +181,7 @@ public static class TablePrinter
                 var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
                 var total = totals.Values.Sum(x => x.ChangeMap.ContainsKey(date) ? byDay switch
                 {
-                    global::ByDay.Lines => x.ChangeMap[date].Additions + x.ChangeMap[date].Deletions,
+                    global::ByDay.Lines => x.ChangeMap[date].Lines,
                     global::ByDay.Files => x.ChangeMap[date].Files,
                     global::ByDay.Commits => x.ChangeMap[date].Commits,
                     _ => 0,
@@ -213,10 +215,10 @@ public static class TablePrinter
             ));
         }
         table.AddColumn(new TableColumn("Total").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions)).ToString("N0")
+            totals.Values.Sum(x => x.TotalLines).ToString("N0")
         ));
 
-        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.ChangeMap.Sum(y => y.Value.Additions + y.Value.Deletions));
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
         if (reverse)
         {
             sorted = sorted.Reverse();
@@ -232,7 +234,7 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::ByDay.Lines => authorData.ChangeMap[date].Additions + authorData.ChangeMap[date].Deletions,
+                        global::ByDay.Lines => authorData.ChangeMap[date].Lines,
                         global::ByDay.Files => authorData.ChangeMap[date].Files,
                         global::ByDay.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
@@ -271,7 +273,7 @@ public static class TablePrinter
             {
                 return byDay switch
                 {
-                    global::ByDay.LinesFlipped => x.Value.Additions + x.Value.Deletions,
+                    global::ByDay.LinesFlipped => x.Value.Lines,
                     global::ByDay.FilesFlipped => x.Value.Files,
                     global::ByDay.CommitsFlipped => x.Value.Commits,
                     _ => 0,
@@ -295,7 +297,7 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::ByDay.LinesFlipped => authorData.ChangeMap[authorDate].Additions + authorData.ChangeMap[authorDate].Deletions,
+                        global::ByDay.LinesFlipped => authorData.ChangeMap[authorDate].Lines,
                         global::ByDay.FilesFlipped => authorData.ChangeMap[authorDate].Files,
                         global::ByDay.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
                         _ => 0,

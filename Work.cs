@@ -200,7 +200,7 @@ public static class Work
                 else if (char.IsDigit(line[0]) && currentAuthor != null && currentDate != null && !skipUntilNextCommit)
                 {
                     var parts = line.Split("\t", StringSplitOptions.RemoveEmptyEntries);
-                    if (options.IgnoreFiles.Any(parts[2].Contains))
+                    if (options.IgnoreFiles.Any(parts[2].Contains) || ExcludeExtensions.Any(parts[2].EndsWith))
                     {
                         continue;
                     }
@@ -214,7 +214,7 @@ public static class Work
                     {
                         changeSet.Additions += additions;
                         changeSet.Deletions += deletions;
-                        changeSet.Files++;
+                        changeSet.FileItems.Add(parts[2]);
                     }
                 }
             }
