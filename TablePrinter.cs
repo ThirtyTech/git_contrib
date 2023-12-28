@@ -70,13 +70,13 @@ public static class TablePrinter
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Author").Footer("Summary Totals"));
         table.AddColumn(new TableColumn("Commits").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => x.TotalCommits).ToString("N0")
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalCommits).ToString("N0")
         ));
         table.AddColumn(new TableColumn("Files").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => x.UniqueFiles).ToString("N0")
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.UniqueFiles).ToString("N0")
         ));
         table.AddColumn(new TableColumn("Lines").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => x.TotalLines).ToString("N0")
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalLines).ToString("N0")
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
