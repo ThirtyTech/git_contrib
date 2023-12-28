@@ -26,7 +26,7 @@ public class Options
     public string Path { get; set; } = "";
     public string Mailmap { get; set; } = "";
     public int? AuthorLimit { get; set; }
-    public bool ShowSummary { get; set; } = false;
+    public bool HideSummary { get; set; } = false;
     public bool Reverse { get; set; } = false;
     public Format Format { get; set; }
     public bool Fetch { get; set; } = true;

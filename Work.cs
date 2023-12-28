@@ -223,11 +223,11 @@ public static class Work
         {
             if (options.ByDay != null)
             {
-                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ToDate, options.ShowSummary);
+                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ToDate, options.HideSummary);
             }
             else
             {
-                TablePrinter.PrintTableTotalsSelector(totals, options.ShowSummary, options.Reverse, options.AuthorLimit);
+                TablePrinter.PrintTableTotalsSelector(totals, options.HideSummary, options.Reverse, options.AuthorLimit);
             }
         }
         else if (options.Format == global::Format.Json)

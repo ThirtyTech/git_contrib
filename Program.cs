@@ -23,7 +23,7 @@ parseArgument: (result) =>
 var ByDay = new Option<ByDay?>("--by-day", description: "Show results by day");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
-var ShowSummary = new Option<bool>("--show-summary", description: "Show project summary details");
+var HideSummary = new Option<bool>("--hide-summary", description: "Hide project summary details");
 var Reverse = new Option<bool>("--reverse", description: "Reverse the order of the results");
 var AuthorLimit = new Option<int?>("--limit", description: "Limit the number of authors to show");
 var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore") { AllowMultipleArgumentsPerToken = true };
@@ -36,7 +36,7 @@ var root = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName(
             Path,
             Mailmap,
             Format,
-            ShowSummary,
+            HideSummary,
             IgnoreAuthors,
             IgnoreFiles,
             ByDay,
@@ -75,7 +75,7 @@ root.SetHandler(async (context) =>
         Reverse = context.ParseResult.GetValueForOption(Reverse),
         Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? "",
         AuthorLimit = context.ParseResult.GetValueForOption(AuthorLimit),
-        ShowSummary = context.ParseResult.GetValueForOption(ShowSummary),
+        HideSummary = context.ParseResult.GetValueForOption(HideSummary),
         IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
         IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),
     };
