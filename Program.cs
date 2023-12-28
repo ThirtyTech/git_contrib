@@ -67,7 +67,7 @@ root.SetHandler(async (context) =>
     var fromDate = context.ParseResult.GetValueForOption(FromDate);
     var options = new Options
     {
-        FromDate = fromDate.HasValue ? fromDate.Value : byDay.HasValue && !fromDate.HasValue ? DateTimeOffset.Now.AddDays(-7) : DateTimeOffset.MinValue,
+        FromDate = fromDate.HasValue ? fromDate.Value : byDay.HasValue && !fromDate.HasValue ? DateTimeOffset.Now.AddDays(-6) : DateTimeOffset.MinValue,
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
         ByDay = context.ParseResult.GetValueForOption(ByDay),
         Path = context.ParseResult.GetValueForArgument(Path),

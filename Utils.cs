@@ -59,7 +59,7 @@ public static class Utils
             daysSinceMonday += 7;
         }
 
-        return today.AddDays(-daysSinceMonday - 1);
+        return today.AddDays(-daysSinceMonday);
     }
 
     public static bool TryParseHumanReadableDateTimeOffset(string input, out DateTimeOffset date)
@@ -76,7 +76,7 @@ public static class Utils
 
         date = parts[0].ToLower() switch
         {
-            "week" => startOfDay.AddDays(-7),
+            "week" => startOfDay.AddDays(-6),
             "workweek" or "work" => FindLastMonday(),
             _ => DateTimeOffset.MinValue
         };
@@ -109,9 +109,9 @@ public static class Utils
                 "minute" or "minutes" => startOfDay.AddMinutes(-quantity),
                 "hour" or "hours" => startOfDay.AddHours(-quantity),
                 "day" or "days" => startOfDay.AddDays(-quantity),
-                "week" or "weeks" => startOfDay.AddDays(-quantity * 7),
-                "month" or "months" => startOfDay.AddMonths(-quantity),
-                "year" or "years" => startOfDay.AddYears(-quantity),
+                "week" or "weeks" => startOfDay.AddDays((-quantity) * 7).AddDays(1),
+                "month" or "months" => startOfDay.AddMonths(-quantity).AddDays(1),
+                "year" or "years" => startOfDay.AddYears(-quantity).AddDays(1),
                 _ => DateTimeOffset.MinValue
             };
             if (date != DateTimeOffset.MinValue)

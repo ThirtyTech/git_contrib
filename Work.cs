@@ -88,7 +88,7 @@ public static class Work
 
         int maxDates = (int)Math.Round((DateTime.Now - options.FromDate).TotalDays);
 
-        var dates = Enumerable.Range(1, maxDates)
+        var dates = Enumerable.Range(0, maxDates)
                               .Select(i => options.FromDate.AddDays(i).ToString("yyyy-MM-dd"))
                               .ToList();
 
