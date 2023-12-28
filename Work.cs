@@ -85,8 +85,7 @@ public static class Work
             Console.WriteLine("Not a git directory: " + options.Path);
             return null;
         }
-
-        int maxDates = (int)Math.Round((DateTime.Now - options.FromDate).TotalDays);
+        int maxDates = (int)Math.Round((options.ToDate - options.FromDate).TotalDays);
 
         var dates = Enumerable.Range(0, maxDates)
                               .Select(i => options.FromDate.AddDays(i).ToString("yyyy-MM-dd"))
@@ -224,7 +223,7 @@ public static class Work
         {
             if (options.ByDay != null)
             {
-                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ShowSummary);
+                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ToDate, options.ShowSummary);
             }
             else
             {

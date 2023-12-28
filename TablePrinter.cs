@@ -104,31 +104,31 @@ public static class TablePrinter
         AnsiConsole.Write(table);
     }
 
-    public static void PrintTableByDaySelector(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDaySelector(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
         if (byDay.ToString().Contains("Flipped"))
         {
-            PrintTableByDayFlipped(byDay, totals, fromDate, hideSummary, reverse);
+            PrintTableByDayFlipped(byDay, totals, fromDate, toDate, hideSummary, reverse);
         }
         else
         {
             if (Console.IsOutputRedirected)
             {
-                PrintTableByDayPiped(byDay, totals, fromDate, hideSummary, reverse);
+                PrintTableByDayPiped(byDay, totals, fromDate, toDate, hideSummary, reverse);
             }
             else
             {
-                PrintTableByDay(byDay, totals, fromDate, hideSummary, reverse);
+                PrintTableByDay(byDay, totals, fromDate, toDate, hideSummary, reverse);
             }
         }
 
     }
 
-    private static void PrintTableByDayPiped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
+    private static void PrintTableByDayPiped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
         var table = new ConsoleTable("Author");
         table.Options.EnableCount = false;
-        var days = (DateTime.Now - fromDate).Days;
+        var days = (toDate - fromDate).Days;
 
         for (int i = 0; i <= days; i++)
         {
@@ -197,7 +197,7 @@ public static class TablePrinter
     }
 
 
-    public static void PrintTableByDay(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDay(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
         var table = new Table();
         table.Title($"{byDay} by Author");
@@ -205,13 +205,14 @@ public static class TablePrinter
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Author").NoWrap().Footer("Summary"));
         table.ShowFooters = !hideSummary;
-        var days = (DateTime.Now - fromDate).Days;
+        var days = (toDate - fromDate).Days;
         for (int i = 0; i <= days; i++)
         {
             var date = fromDate.AddDays(i).ToString("MM-dd");
             var dayOfWeek = fromDate.AddDays(i).DayOfWeek.ToString().Substring(0, 2);
             table.AddColumn(new TableColumn($"{date}\n{dayOfWeek}").Alignment(Justify.Right).Footer(
-                totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? byDay switch {
+                totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? byDay switch
+                {
                     global::ByDay.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
                     global::ByDay.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].UniqueFiles,
                     global::ByDay.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
@@ -220,7 +221,8 @@ public static class TablePrinter
             ));
         }
         table.AddColumn(new TableColumn("Total").Alignment(Justify.Right).Footer(
-            totals.Values.Sum(x => byDay switch {
+            totals.Values.Sum(x => byDay switch
+            {
                 global::ByDay.Lines => x.TotalLines,
                 global::ByDay.Files => x.ChangeMap.Sum(x => x.Value.UniqueFiles),
                 global::ByDay.Commits => x.TotalCommits,
@@ -265,9 +267,9 @@ public static class TablePrinter
     }
 
 
-    public static void PrintTableByDayFlipped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDayFlipped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
-        var days = (DateTime.Now - fromDate).Days;
+        var days = (toDate - fromDate).Days;
         var table = new Table();
         table.Title($"{byDay} by Author");
         table.Border(TableBorder.Rounded);
