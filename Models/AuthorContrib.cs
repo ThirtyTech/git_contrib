@@ -3,9 +3,8 @@ public class ChangeSet
     public int Additions { get; set; }
     public int Deletions { get; set; }
     public int Files => FileItems.Count();
-    public int UniqueFiles => FileItems.Distinct().Count();
     public int Commits { get; set; }
-    public List<string> FileItems { get; set; } = new List<string>();
+    public HashSet<string> FileItems { get; set; } = new HashSet<string>();
     public int Lines => Additions + Deletions;
 }
 

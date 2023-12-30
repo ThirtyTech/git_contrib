@@ -154,7 +154,7 @@ public static class TablePrinter
                     var total = byDay switch
                     {
                         global::ByDay.Lines => authorData.ChangeMap[date].Lines,
-                        global::ByDay.Files => authorData.ChangeMap[date].UniqueFiles,
+                        global::ByDay.Files => authorData.ChangeMap[date].Files,
                         global::ByDay.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
@@ -182,7 +182,7 @@ public static class TablePrinter
                 var total = totals.Values.Sum(x => x.ChangeMap.ContainsKey(date) ? byDay switch
                 {
                     global::ByDay.Lines => x.ChangeMap[date].Lines,
-                    global::ByDay.Files => x.ChangeMap[date].UniqueFiles,
+                    global::ByDay.Files => x.ChangeMap[date].Files,
                     global::ByDay.Commits => x.ChangeMap[date].Commits,
                     _ => 0,
                 } : 0);
@@ -214,7 +214,7 @@ public static class TablePrinter
                 totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? byDay switch
                 {
                     global::ByDay.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
-                    global::ByDay.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].UniqueFiles,
+                    global::ByDay.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
                     global::ByDay.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
                     _ => 0,
                 } : 0).ToString("N0")
@@ -224,7 +224,7 @@ public static class TablePrinter
             totals.Values.Sum(x => byDay switch
             {
                 global::ByDay.Lines => x.TotalLines,
-                global::ByDay.Files => x.ChangeMap.Sum(x => x.Value.UniqueFiles),
+                global::ByDay.Files => x.ChangeMap.Sum(x => x.Value.Files),
                 global::ByDay.Commits => x.TotalCommits,
                 _ => 0,
             }).ToString("N0")
@@ -247,7 +247,7 @@ public static class TablePrinter
                     var total = byDay switch
                     {
                         global::ByDay.Lines => authorData.ChangeMap[date].Lines,
-                        global::ByDay.Files => authorData.ChangeMap[date].UniqueFiles,
+                        global::ByDay.Files => authorData.ChangeMap[date].Files,
                         global::ByDay.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
@@ -286,7 +286,7 @@ public static class TablePrinter
                 return byDay switch
                 {
                     global::ByDay.LinesFlipped => x.Value.Lines,
-                    global::ByDay.FilesFlipped => x.Value.UniqueFiles,
+                    global::ByDay.FilesFlipped => x.Value.Files,
                     global::ByDay.CommitsFlipped => x.Value.Commits,
                     _ => 0,
                 };
@@ -310,7 +310,7 @@ public static class TablePrinter
                     var total = byDay switch
                     {
                         global::ByDay.LinesFlipped => authorData.ChangeMap[authorDate].Lines,
-                        global::ByDay.FilesFlipped => authorData.ChangeMap[authorDate].UniqueFiles,
+                        global::ByDay.FilesFlipped => authorData.ChangeMap[authorDate].Files,
                         global::ByDay.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
                         _ => 0,
                     };
