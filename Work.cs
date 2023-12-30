@@ -223,7 +223,7 @@ public static class Work
         {
             if (options.ByDay != null)
             {
-                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ToDate, options.HideSummary);
+                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
             }
             else
             {

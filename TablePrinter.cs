@@ -230,7 +230,13 @@ public static class TablePrinter
             }).ToString("N0")
         ));
 
-        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
+        IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => byDay switch
+        {
+            global::ByDay.Lines => x.TotalLines,
+            global::ByDay.Files => x.UniqueFiles,
+            global::ByDay.Commits => x.TotalCommits,
+            _ => x.TotalLines,
+        });
         if (reverse)
         {
             sorted = sorted.Reverse();
@@ -296,7 +302,7 @@ public static class TablePrinter
 
         table.AddColumn("Total", configure: x => x.Alignment = Justify.Right);
 
-        for (int i = 0; i <= days; i++)
+        foreach (int i in reverse ? Enumerable.Range(0, days + 1).Reverse() : Enumerable.Range(0, days + 1))
         {
             var date = fromDate.AddDays(i).ToString("MM-dd");
             var dayOfWeek = fromDate.AddDays(i).DayOfWeek.ToString().Substring(0, 2);
