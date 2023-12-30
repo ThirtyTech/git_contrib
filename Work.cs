@@ -245,7 +245,7 @@ public static class Work
 
             // Add all authors and line totals to the chart
             int index = 0;
-            foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)))
+            foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)).Take(options.AuthorLimit ?? int.MaxValue))
             {
                 var authorName = author.Value.Name;
                 var authorEmail = author.Value.Email;
@@ -264,7 +264,7 @@ public static class Work
 
             // Add all authors and line totals to the chart
             int index = 0;
-            var sorted = totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions));
+            var sorted = totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)).Take(options.AuthorLimit ?? int.MaxValue);
             if (options.Reverse)
             {
                 sorted = totals.OrderBy(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions));
