@@ -74,17 +74,17 @@ public static class Work
 
     public static async Task<IEnumerable<AuthorData>?> DoWork_Internal(Options options)
     {
+        if (!await Utils.IsGitDirectoryAsync(options.Path))
+        {
+            Console.WriteLine("Not a git directory: " + options.Path);
+            return null;
+        }
 
         if (options.Format == global::Format.Table)
         {
             Console.WriteLine("Processing directory: " + options.Path);
         }
 
-        if (!await Utils.IsGitDirectoryAsync(options.Path))
-        {
-            Console.WriteLine("Not a git directory: " + options.Path);
-            return null;
-        }
         int maxDates = (int)Math.Round((options.ToDate - options.FromDate).TotalDays);
 
         var dates = Enumerable.Range(0, maxDates)
