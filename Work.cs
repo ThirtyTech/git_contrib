@@ -85,10 +85,11 @@ public static class Work
             Console.WriteLine("Processing directory: " + options.Path);
         }
 
+
         int maxDates = (int)Math.Round((options.ToDate - options.FromDate).TotalDays);
 
         var dates = Enumerable.Range(0, maxDates)
-                              .Select(i => options.FromDate.AddDays(i).ToString("yyyy-MM-dd"))
+                              .Select(i => options.FromDate.AddDays(i + 1).ToString("yyyy-MM-dd"))
                               .ToList();
 
         var dateMap = dates.ToHashSet();
@@ -103,7 +104,7 @@ public static class Work
 
         string gitCmd = "git";
         var gitArgs = new List<string> { "--no-pager", "log", "--branches", "--remotes", "--summary", "--numstat", "--mailmap", "--no-merges", "--format=^%h|%aI|%aN|<%aE>" };
-        if (options.FromDate != DateTime.MinValue)
+        if (options.FromDate != DateTimeOffset.MinValue)
         {
             gitArgs.Add("--since");
             gitArgs.Add(options.FromDate.ToString("yyyy-MM-dd"));
