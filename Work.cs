@@ -89,7 +89,7 @@ public static class Work
         int maxDates = (int)Math.Round((options.ToDate - options.FromDate).TotalDays);
 
         var dates = Enumerable.Range(0, maxDates)
-                              .Select(i => options.FromDate.AddDays(i + 1).ToString("yyyy-MM-dd"))
+                              .Select(i => options.FromDate.AddDays(i).ToString("yyyy-MM-dd"))
                               .ToList();
 
         var dateMap = dates.ToHashSet();
@@ -107,7 +107,7 @@ public static class Work
         if (options.FromDate != DateTimeOffset.MinValue)
         {
             gitArgs.Add("--since");
-            gitArgs.Add(options.FromDate.ToString("yyyy-MM-dd"));
+            gitArgs.Add(options.FromDate.AddDays(-1).ToString("yyyy-MM-dd"));
         }
 
         var gitCmdResult = await Cli.Wrap(gitCmd)

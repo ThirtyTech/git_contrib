@@ -69,6 +69,10 @@ public static class Utils
         {
             return false;
         }
+        if (input.Contains("/"))
+        {
+            throw new Exception("Date format not supported. Please use the format: yyyy-MM-dd");
+        }
 
         var parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var now = DateTime.Now;
@@ -94,6 +98,11 @@ public static class Utils
                 return true;
             }
             if (DateTime.TryParseExact(input, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out _date))
+            {
+                date = _date;
+                return true;
+            }
+            if (DateTime.TryParseExact(input, "MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _date))
             {
                 date = _date;
                 return true;
