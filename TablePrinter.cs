@@ -104,7 +104,7 @@ public static class TablePrinter
         AnsiConsole.Write(table);
     }
 
-    public static void PrintTableByDaySelector(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDaySelector(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
         if (byDay.ToString().Contains("Flipped"))
         {
@@ -124,7 +124,7 @@ public static class TablePrinter
 
     }
 
-    private static void PrintTableByDayPiped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    private static void PrintTableByDayPiped(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
         var table = new ConsoleTable("Author");
         table.Options.EnableCount = false;
@@ -153,9 +153,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::ByDay.Lines => authorData.ChangeMap[date].Lines,
-                        global::ByDay.Files => authorData.ChangeMap[date].Files,
-                        global::ByDay.Commits => authorData.ChangeMap[date].Commits,
+                        global::Metric.Lines => authorData.ChangeMap[date].Lines,
+                        global::Metric.Files => authorData.ChangeMap[date].Files,
+                        global::Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
                     runningTotal += total;
@@ -181,9 +181,9 @@ public static class TablePrinter
                 var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
                 var total = totals.Values.Sum(x => x.ChangeMap.ContainsKey(date) ? byDay switch
                 {
-                    global::ByDay.Lines => x.ChangeMap[date].Lines,
-                    global::ByDay.Files => x.ChangeMap[date].Files,
-                    global::ByDay.Commits => x.ChangeMap[date].Commits,
+                    global::Metric.Lines => x.ChangeMap[date].Lines,
+                    global::Metric.Files => x.ChangeMap[date].Files,
+                    global::Metric.Commits => x.ChangeMap[date].Commits,
                     _ => 0,
                 } : 0);
                 grandTotal += total;
@@ -197,7 +197,7 @@ public static class TablePrinter
     }
 
 
-    public static void PrintTableByDay(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDay(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
         var table = new Table();
         table.Title($"{byDay} by Author");
@@ -213,9 +213,9 @@ public static class TablePrinter
             table.AddColumn(new TableColumn($"{date}\n{dayOfWeek}").Alignment(Justify.Right).Footer(
                 totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? byDay switch
                 {
-                    global::ByDay.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
-                    global::ByDay.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
-                    global::ByDay.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
+                    global::Metric.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
+                    global::Metric.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
+                    global::Metric.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
                     _ => 0,
                 } : 0).ToString("N0")
             ));
@@ -223,18 +223,18 @@ public static class TablePrinter
         table.AddColumn(new TableColumn("Total").Alignment(Justify.Right).Footer(
             totals.Values.Sum(x => byDay switch
             {
-                global::ByDay.Lines => x.TotalLines,
-                global::ByDay.Files => x.ChangeMap.Sum(x => x.Value.Files),
-                global::ByDay.Commits => x.TotalCommits,
+                global::Metric.Lines => x.TotalLines,
+                global::Metric.Files => x.ChangeMap.Sum(x => x.Value.Files),
+                global::Metric.Commits => x.TotalCommits,
                 _ => 0,
             }).ToString("N0")
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => byDay switch
         {
-            global::ByDay.Lines => x.TotalLines,
-            global::ByDay.Files => x.UniqueFiles,
-            global::ByDay.Commits => x.TotalCommits,
+            global::Metric.Lines => x.TotalLines,
+            global::Metric.Files => x.UniqueFiles,
+            global::Metric.Commits => x.TotalCommits,
             _ => x.TotalLines,
         });
         if (reverse)
@@ -252,9 +252,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::ByDay.Lines => authorData.ChangeMap[date].Lines,
-                        global::ByDay.Files => authorData.ChangeMap[date].Files,
-                        global::ByDay.Commits => authorData.ChangeMap[date].Commits,
+                        global::Metric.Lines => authorData.ChangeMap[date].Lines,
+                        global::Metric.Files => authorData.ChangeMap[date].Files,
+                        global::Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
                     runningTotal += total;
@@ -273,7 +273,7 @@ public static class TablePrinter
     }
 
 
-    public static void PrintTableByDayFlipped(ByDay byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDayFlipped(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
         var days = (toDate - fromDate).Days;
         var table = new Table();
@@ -291,9 +291,9 @@ public static class TablePrinter
             {
                 return byDay switch
                 {
-                    global::ByDay.LinesFlipped => x.Value.Lines,
-                    global::ByDay.FilesFlipped => x.Value.Files,
-                    global::ByDay.CommitsFlipped => x.Value.Commits,
+                    global::Metric.LinesFlipped => x.Value.Lines,
+                    global::Metric.FilesFlipped => x.Value.Files,
+                    global::Metric.CommitsFlipped => x.Value.Commits,
                     _ => 0,
                 };
             }).ToString("N0"));
@@ -315,9 +315,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::ByDay.LinesFlipped => authorData.ChangeMap[authorDate].Lines,
-                        global::ByDay.FilesFlipped => authorData.ChangeMap[authorDate].Files,
-                        global::ByDay.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
+                        global::Metric.LinesFlipped => authorData.ChangeMap[authorDate].Lines,
+                        global::Metric.FilesFlipped => authorData.ChangeMap[authorDate].Files,
+                        global::Metric.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
                         _ => 0,
                     };
                     runningTotal += total;

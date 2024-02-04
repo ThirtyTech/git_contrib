@@ -20,7 +20,7 @@ parseArgument: (result) =>
     return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.Now;
 
 });
-var ByDay = new Option<ByDay?>("--by-day", description: "Show results by day");
+var Metric = new Option<Metric?>("--metric", description: "Which metric to show. Defaults to overall");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
 var HideSummary = new Option<bool>("--hide-summary", description: "Hide project summary details");
@@ -28,6 +28,7 @@ var Reverse = new Option<bool>("--reverse", description: "Reverse the order of t
 var AuthorLimit = new Option<int?>("--limit", description: "Limit the number of authors to show");
 var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore") { AllowMultipleArgumentsPerToken = true };
 var IgnoreFiles = new Option<string[]>("--ignore-files", description: "Files to ignore") { AllowMultipleArgumentsPerToken = true };
+var IgnoreDefaults = new Option<bool>("--ignore-defaults", description: "Ignore default found in .gitcontrib");
 
 var root = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version} gives statistics by authors to the project.") {
             Version,
@@ -39,22 +40,11 @@ var root = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName(
             HideSummary,
             IgnoreAuthors,
             IgnoreFiles,
-            ByDay,
+            Metric,
             Reverse,
-            AuthorLimit
+            AuthorLimit,
+            IgnoreDefaults
         };
-
-var ConfigArg = new Argument<ConfigOptions>("path", description: "Path to config file", parse: (result) =>
-{
-    var input = result.Tokens.Single().Value;
-    return new ConfigOptions(input);
-});
-var Config = new Command("config", "Configure defaults for the tool")
-{
-    ConfigArg
-};
-
-root.AddCommand(Config);
 
 root.SetHandler(async (context) =>
 {
@@ -63,21 +53,23 @@ root.SetHandler(async (context) =>
         Console.WriteLine($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version}");
         return;
     }
-    var byDay = context.ParseResult.GetValueForOption(ByDay);
+
+    var path = context.ParseResult.GetValueForArgument(Path);
+    var byDay = context.ParseResult.GetValueForOption(Metric);
     var fromDate = context.ParseResult.GetValueForOption(FromDate);
-    if (byDay.HasValue && !fromDate.HasValue)
+
+    if (!await Utils.IsGitDirectoryAsync(path))
     {
-        fromDate = DateTimeOffset.Now.AddDays(-6);
+        Console.WriteLine("Not a git directory: " + path);
+        return;
     }
-    else if (!byDay.HasValue && !fromDate.HasValue)
-    {
-        fromDate = fromDate = DateTimeOffset.MinValue;
-    }
+
+
+    var defaultOptions = new ConfigOptions(path);
     var options = new Options
     {
-        FromDate = fromDate.HasValue ? fromDate.Value : DateTimeOffset.MinValue,
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
-        ByDay = context.ParseResult.GetValueForOption(ByDay),
+        Metric = context.ParseResult.GetValueForOption(Metric),
         Path = context.ParseResult.GetValueForArgument(Path),
         Format = context.ParseResult.GetValueForOption(Format),
         Reverse = context.ParseResult.GetValueForOption(Reverse),
@@ -86,15 +78,32 @@ root.SetHandler(async (context) =>
         HideSummary = context.ParseResult.GetValueForOption(HideSummary),
         IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
         IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),
+        IgnoreDefaults = context.ParseResult.GetValueForOption(IgnoreDefaults)
     };
+
+    if (!options.IgnoreDefaults && !defaultOptions.IsEmpty)
+    {
+        options.MergeOptions(defaultOptions);
+    }
+
+    if (!fromDate.HasValue && string.IsNullOrWhiteSpace(defaultOptions.FromDate))
+    {
+        if (byDay.HasValue)
+        {
+            fromDate = DateTimeOffset.Now.AddDays(-6);
+        }
+        else
+        {
+            fromDate = fromDate = DateTimeOffset.MinValue;
+        }
+        options.FromDate = fromDate.HasValue ? fromDate.Value : DateTimeOffset.MinValue;
+    }
+    else if(fromDate.HasValue)
+    {
+        options.FromDate = fromDate.Value;
+    }
+
     await Work.DoWork(options);
-});
-
-
-Config.SetHandler(async (options) =>
-{
-
-    await Work.DoWork(Options.Convert(options.ParseResult.GetValueForArgument(ConfigArg)));
 });
 
 return await new CommandLineBuilder(root)

@@ -74,11 +74,6 @@ public static class Work
 
     public static async Task<IEnumerable<AuthorData>?> DoWork_Internal(Options options)
     {
-        if (!await Utils.IsGitDirectoryAsync(options.Path))
-        {
-            Console.WriteLine("Not a git directory: " + options.Path);
-            return null;
-        }
 
         if (options.Format == global::Format.Table)
         {
@@ -222,13 +217,13 @@ public static class Work
 
         if (options.Format == global::Format.Table)
         {
-            if (options.ByDay != null)
+            if (options.Metric == null || options.Metric == global::Metric.All)
             {
-                TablePrinter.PrintTableByDaySelector(options.ByDay ?? global::ByDay.Lines, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
+                TablePrinter.PrintTableTotalsSelector(totals, options.HideSummary, options.Reverse, options.AuthorLimit);
             }
             else
             {
-                TablePrinter.PrintTableTotalsSelector(totals, options.HideSummary, options.Reverse, options.AuthorLimit);
+                TablePrinter.PrintTableByDaySelector(options.Metric ?? global::Metric.Lines, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
             }
         }
         else if (options.Format == global::Format.Json)
