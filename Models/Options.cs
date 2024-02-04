@@ -122,6 +122,7 @@ public class ConfigOptions
                 var config = JsonSerializer.Deserialize<ConfigOptions>(File.ReadAllText(path), new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true,
                     Converters =
                     {
                         new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
