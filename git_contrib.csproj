@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Version>0.2.5</Version>
+    <AssemblyName>gitcontrib</AssemblyName>
     <OutputType>Exe</OutputType>
     <SelfContained>true</SelfContained>
     <TargetFramework>net8.0</TargetFramework>
