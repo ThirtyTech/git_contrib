@@ -88,17 +88,14 @@ public class ConfigOptions
     {
         if (!string.IsNullOrWhiteSpace(path))
         {
-            if (!path.Contains(".gitcontrib"))
-            {
-                path = System.IO.Path.Combine(path, ".gitcontrib");
-            }
-            if (!File.Exists(path))
+            var findConfigPath = Utils.FindNearestGitContrib(path);
+            if (!File.Exists(findConfigPath))
             {
                 IsEmpty = true;
                 return;
             }
             // Get File extention or no file extension in the case of yaml
-            var ext = System.IO.Path.GetExtension(path);
+            var ext = System.IO.Path.GetExtension(findConfigPath);
 
             // Check if file is valid yaml or json
             if (ext == ".yaml" || ext == ".yml" || ext == ".gitcontrib")
@@ -108,18 +105,14 @@ public class ConfigOptions
                     .WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .IgnoreUnmatchedProperties()
                     .Build();
-                var yaml = File.ReadAllText(path);
-                var config = deserializer.Deserialize<ConfigOptions>(yaml);
-                if (config == null)
-                {
-                    throw new Exception("Config file found at: " + path + " but could not be deserialized.");
-                }
+                var yaml = File.ReadAllText(findConfigPath);
+                var config = deserializer.Deserialize<ConfigOptions>(yaml) ?? throw new Exception("Config file found at: " + findConfigPath + " but could not be deserialized.");
                 config.Adapt(this);
             }
             else if (ext == ".json")
             {
                 // Deserialize json
-                var config = JsonSerializer.Deserialize<ConfigOptions>(File.ReadAllText(path), new JsonSerializerOptions
+                var config = JsonSerializer.Deserialize<ConfigOptions>(File.ReadAllText(findConfigPath), new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                     PropertyNameCaseInsensitive = true,
@@ -127,11 +120,7 @@ public class ConfigOptions
                     {
                         new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
                     }
-                });
-                if (config == null)
-                {
-                    throw new Exception("Config file found at: " + path + " but could not be deserialized.");
-                }
+                }) ?? throw new Exception("Config file found at: " + findConfigPath + " but could not be deserialized.");
                 config.Adapt(this);
             }
         }

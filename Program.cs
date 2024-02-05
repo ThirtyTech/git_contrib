@@ -64,8 +64,8 @@ root.SetHandler(async (context) =>
         return;
     }
 
-
     var defaultOptions = new ConfigOptions(path);
+
     var options = new Options
     {
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,

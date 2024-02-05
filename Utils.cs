@@ -4,6 +4,28 @@ using CliWrap.Buffered;
 
 public static class Utils
 {
+
+    public static string? FindNearestGitContrib(string path)
+    {
+        var directory = new DirectoryInfo(path);
+        string[] possibleExtensions = [".gitcontrib", ".gitcontrib.json", ".gitcontrib.yaml", ".gitcontrib.yml"];
+
+        while (directory != null)
+        {
+            foreach (var extension in possibleExtensions)
+            {
+                var gitContribFile = new FileInfo(System.IO.Path.Combine(directory.FullName, extension));
+                if (gitContribFile.Exists)
+                {
+                    return gitContribFile.FullName;
+                }
+            }
+
+            directory = directory.Parent;
+        }
+
+        return null;
+    }
     public static async Task<bool> IsGitDirectoryAsync(string path)
     {
         string gitPath = System.IO.Path.Combine(path, ".git");
