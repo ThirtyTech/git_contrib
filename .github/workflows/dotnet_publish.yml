@@ -39,12 +39,12 @@ jobs:
               if: matrix.os != 'windows-latest'
               run: |
                   cd ./published
-                  mv git_contrib git_contrib_${{ matrix.os }}
+                  mv gitcontrib gitcontrib_${{ matrix.os }}
             - name: Upload published artifacts temporarily
               uses: actions/upload-artifact@v3
               with:
-                  name: git_contrib_${{ matrix.os }}
-                  path: ./published/git_contrib*
+                  name: gitcontrib_${{ matrix.os }}
+                  path: ./published/gitcontrib*
 
     create-release:
         needs: build-and-publish
