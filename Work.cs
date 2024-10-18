@@ -98,7 +98,7 @@ public static class Work
         var buffer = new MemoryStream();
 
         string gitCmd = "git";
-        var gitArgs = new List<string> { "--no-pager", "log", "--branches", "--remotes", "--summary", "--numstat", "--mailmap", "--no-merges", "--format=^%h|%aI|%aN|<%aE>" };
+        var gitArgs = new List<string> { "--no-pager", "log", "--branches", "--remotes", "--summary", "--numstat", "--mailmap", "--no-merges", "--diff-filter=ACMTUXB", "--format=^%h|%aI|%aN|<%aE>" };
         if (options.FromDate != DateTimeOffset.MinValue)
         {
             gitArgs.Add("--since");
