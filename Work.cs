@@ -241,12 +241,26 @@ public static class Work
 
             // Add all authors and line totals to the chart
             int index = 0;
-            foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)).Take(options.AuthorLimit ?? int.MaxValue))
+            foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => options.Metric switch
+            {
+                global::Metric.Lines => x.Additions + x.Deletions,
+                global::Metric.Commits => x.Commits,
+                global::Metric.Files => x.FileItems.Count,
+                _ => x.Additions + x.Deletions
+
+            })).Take(options.AuthorLimit ?? int.MaxValue))
             {
                 var authorName = author.Value.Name;
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
-                var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
+                var authorTotal = authorData.Values.Sum(x=> options.Metric switch
+                {
+                    global::Metric.Lines => x.Additions + x.Deletions,
+                    global::Metric.Commits => x.Commits,
+                    global::Metric.Files => x.FileItems.Count,
+                    _ => x.Additions + x.Deletions
+
+                });
                 chart.AddItem(authorName, authorTotal, Colors[index % Colors.Length]);
                 index++;
             }
@@ -260,17 +274,38 @@ public static class Work
 
             // Add all authors and line totals to the chart
             int index = 0;
-            var sorted = totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions)).Take(options.AuthorLimit ?? int.MaxValue);
+            var sorted = totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => options.Metric switch
+            {
+                global::Metric.Lines => x.Additions + x.Deletions,
+                global::Metric.Commits => x.Commits,
+                global::Metric.Files => x.FileItems.Count,
+                _ => x.Additions + x.Deletions
+
+            })).Take(options.AuthorLimit ?? int.MaxValue);
             if (options.Reverse)
             {
-                sorted = totals.OrderBy(x => x.Value.ChangeMap.Values.Sum(x => x.Additions + x.Deletions));
+                sorted = totals.OrderBy(x => x.Value.ChangeMap.Values.Sum(x => options.Metric switch
+                {
+                    global::Metric.Lines => x.Additions + x.Deletions,
+                    global::Metric.Commits => x.Commits,
+                    global::Metric.Files => x.FileItems.Count,
+                    _ => x.Additions + x.Deletions
+
+                })).Take(options.AuthorLimit ?? int.MaxValue);
             }
             foreach (var author in sorted)
             {
                 var authorName = author.Value.Name;
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
-                var authorTotal = authorData.Values.Sum(x => x.Additions + x.Deletions);
+                var authorTotal = authorData.Values.Sum(x=> options.Metric switch
+                {
+                    global::Metric.Lines => x.Additions + x.Deletions,
+                    global::Metric.Commits => x.Commits,
+                    global::Metric.Files => x.FileItems.Count,
+                    _ => x.Additions + x.Deletions
+
+                });
                 var item = new BarChartItem(authorName, authorTotal, Colors[index % Colors.Length]);
                 // var item = new BarChartItem(authorName, authorTotal, Colors[index % 20], Colors[index % 20]);
                 chart.AddItem(item);
