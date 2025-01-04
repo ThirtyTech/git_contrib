@@ -79,7 +79,7 @@ public static class Work
     public static async Task<IEnumerable<AuthorData>?> DoWork_Internal(Options options)
     {
 
-        if (options.Format == Models.Format.Table)
+        if (options.Format == Format.Table)
         {
             Console.WriteLine("Processing directory: " + options.Path);
         }
@@ -228,6 +228,23 @@ public static class Work
             else
             {
                 TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, options.SwapAxes, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
+            }
+        }
+        else if (options.Format == Format.Csv)
+        {
+            using (var writer = new StreamWriter(Console.OpenStandardOutput()))
+            using (var csv = new CsvHelper.CsvWriter(writer, System.Globalization.CultureInfo.InvariantCulture))
+            {
+                var records = totals.SelectMany(author => author.Value.ChangeMap.Select(change => new
+                {
+                    Author = author.Value.Name,
+                    Date = change.Key,
+                    change.Value.Commits,
+                    change.Value.Additions,
+                    change.Value.Deletions,
+                })).ToList();
+
+                csv.WriteRecords(records);
             }
         }
         else if (options.Format == Format.Json)

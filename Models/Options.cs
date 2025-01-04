@@ -152,6 +152,7 @@ public enum Metric
 public enum Format
 {
     Table,
+    Csv,
     Json,
     Chart,
     BarChart,

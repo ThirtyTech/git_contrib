@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="cliwrap" Version="3.6.4" />
     <PackageReference Include="ConsoleTables" Version="2.6.1" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="Mapster" Version="7.4.0" />
     <PackageReference Include="Spectre.Console" Version="0.48.0" />
     <PackageReference Include="System.Commandline" Version="2.0.0-beta4.22272.1" />
