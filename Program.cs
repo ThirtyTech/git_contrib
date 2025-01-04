@@ -1,5 +1,4 @@
-﻿
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using System.Reflection;
@@ -8,7 +7,7 @@ using git_contrib.Models;
 
 var Version = new Option<bool>("--version", "Show the version information and exit");
 
-var Path = new Argument<string>("path", description: "Path to search for git repositories", getDefaultValue: Directory.GetCurrentDirectory);
+var RepoPath = new Argument<string>("path", description: "Path to search for git repositories", getDefaultValue: Directory.GetCurrentDirectory);
 var FromDate = new Option<DateTimeOffset?>("--from", description: "Starting date for commits to be considered",
 parseArgument: (result) =>
 {
@@ -25,7 +24,7 @@ parseArgument: (result) =>
 });
 var Metric = new Option<Metric?>("--metric", description: "Which metric to show. Defaults to overall");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
-var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => git_contrib.Models.Format.Table);
+var OutputFormat = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => Format.Table);
 var HideSummary = new Option<bool>("--hide-summary", description: "Hide project summary details");
 var Reverse = new Option<bool>("--reverse", description: "Reverse the order of the results");
 var AuthorLimit = new Option<int?>("--limit", description: "Limit the number of authors to show");
@@ -37,9 +36,9 @@ var root = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName(
             Version,
             FromDate,
             ToDate,
-            Path,
+            RepoPath,
             Mailmap,
-            Format,
+            OutputFormat,
             HideSummary,
             IgnoreAuthors,
             IgnoreFiles,
@@ -57,7 +56,7 @@ root.SetHandler(async (context) =>
         return;
     }
 
-    var path = context.ParseResult.GetValueForArgument(Path);
+    var path = context.ParseResult.GetValueForArgument(RepoPath);
     var byDay = context.ParseResult.GetValueForOption(Metric);
     var fromDate = context.ParseResult.GetValueForOption(FromDate);
 
@@ -73,8 +72,8 @@ root.SetHandler(async (context) =>
     {
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
         Metric = context.ParseResult.GetValueForOption(Metric),
-        Path = context.ParseResult.GetValueForArgument(Path),
-        Format = context.ParseResult.GetValueForOption(Format),
+        Path = context.ParseResult.GetValueForArgument(RepoPath),
+        Format = context.ParseResult.GetValueForOption(OutputFormat),
         Reverse = context.ParseResult.GetValueForOption(Reverse),
         Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? "",
         AuthorLimit = context.ParseResult.GetValueForOption(AuthorLimit),

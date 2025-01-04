@@ -1,16 +1,18 @@
 using System.Collections;
 
+namespace git_contrib;
+
 public class Mailmap : IDictionary<string, string>
 {
     private readonly Dictionary<string, string> _mailmap = new Dictionary<string, string>();
 
     public Mailmap(string path)
     {
-        if (!File.Exists(System.IO.Path.Combine(path, ".mailmap")))
+        if (!File.Exists(Path.Combine(path, ".mailmap")))
         {
             return;
         }
-        foreach (var line in File.ReadLines(System.IO.Path.Combine(path, ".mailmap")))
+        foreach (var line in File.ReadLines(Path.Combine(path, ".mailmap")))
         {
             // Ignore comments and empty lines
             if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
@@ -18,7 +20,7 @@ public class Mailmap : IDictionary<string, string>
                 continue;
             }
 
-            string[] parts = line.Split(new string[] { "> " }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            string[] parts = line.Split(["> "], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             // TODO: Implement the other variations of mailmap. See https://git-scm.com/docs/gitmailmap
             if (parts.Length == 2)
             {
@@ -111,3 +113,4 @@ public class Mailmap : IDictionary<string, string>
         return _mailmap.GetEnumerator();
     }
 }
+

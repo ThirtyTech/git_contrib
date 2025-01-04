@@ -2,6 +2,8 @@ using ConsoleTables;
 using git_contrib.Models;
 using Spectre.Console;
 
+namespace git_contrib;
+
 public static class TablePrinter
 {
     public static void PrintTableTotalsSelector(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
