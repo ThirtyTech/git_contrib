@@ -25,6 +25,7 @@ public class Options
         return result;
     }
     public Metric? Metric { get; set; }
+    public bool FlipAxes { get; set; } = false;
     public DateTimeOffset FromDate { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset ToDate { get; set; } = DateTimeOffset.Now;
     public string Path { get; set; } = string.Empty;
@@ -146,9 +147,6 @@ public enum Metric
     Lines,
     Commits,
     Files,
-    LinesFlipped,
-    CommitsFlipped,
-    FilesFlipped,
 }
 
 public enum Format

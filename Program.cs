@@ -23,6 +23,7 @@ parseArgument: (result) =>
 
 });
 var Metric = new Option<Metric?>("--metric", description: "Which metric to show. Defaults to overall");
+var FlipAxes = new Option<bool>("--flip-axes", description: "Flip the axes of the output");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
 var OutputFormat = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => Format.Table);
 var HideSummary = new Option<bool>("--hide-summary", description: "Hide project summary details");
@@ -44,6 +45,7 @@ var root = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName(
             IgnoreFiles,
             Metric,
             Reverse,
+            FlipAxes,
             AuthorLimit,
             IgnoreDefaults
         };
@@ -72,6 +74,7 @@ root.SetHandler(async (context) =>
     {
         ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
         Metric = context.ParseResult.GetValueForOption(Metric),
+        FlipAxes = context.ParseResult.GetValueForOption(FlipAxes),
         Path = context.ParseResult.GetValueForArgument(RepoPath),
         Format = context.ParseResult.GetValueForOption(OutputFormat),
         Reverse = context.ParseResult.GetValueForOption(Reverse),
@@ -86,6 +89,13 @@ root.SetHandler(async (context) =>
     if (!options.IgnoreDefaults && !defaultOptions.IsEmpty)
     {
         options.MergeOptions(defaultOptions);
+    }
+
+    if(options.FlipAxes && options.Metric == null)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("Warning: flip-axes can only be used with metrics: commits, files, lines");
+        Console.ResetColor();
     }
 
     if (!fromDate.HasValue && string.IsNullOrWhiteSpace(defaultOptions.FromDate))

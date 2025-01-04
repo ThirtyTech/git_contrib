@@ -106,9 +106,9 @@ public static class TablePrinter
         AnsiConsole.Write(table);
     }
 
-    public static void PrintTableByDaySelector(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDaySelector(Metric byDay, bool flipped, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
-        if (byDay.ToString().Contains("Flipped"))
+        if (flipped)
         {
             PrintTableByDayFlipped(byDay, totals, fromDate, toDate, hideSummary, reverse);
         }
@@ -155,9 +155,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        git_contrib.Models.Metric.Lines => authorData.ChangeMap[date].Lines,
-                        git_contrib.Models.Metric.Files => authorData.ChangeMap[date].Files,
-                        git_contrib.Models.Metric.Commits => authorData.ChangeMap[date].Commits,
+                        Models.Metric.Lines => authorData.ChangeMap[date].Lines,
+                        Models.Metric.Files => authorData.ChangeMap[date].Files,
+                        Models.Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
                     runningTotal += total;
@@ -176,16 +176,16 @@ public static class TablePrinter
 
         if (!hideSummary)
         {
-            List<string> row = new List<string> { "Summary" };
+            List<string> row = ["Summary"];
             var grandTotal = 0;
             for (int i = 0; i <= days; i++)
             {
                 var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
                 var total = totals.Values.Sum(x => x.ChangeMap.ContainsKey(date) ? byDay switch
                 {
-                    git_contrib.Models.Metric.Lines => x.ChangeMap[date].Lines,
-                    git_contrib.Models.Metric.Files => x.ChangeMap[date].Files,
-                    git_contrib.Models.Metric.Commits => x.ChangeMap[date].Commits,
+                    Models.Metric.Lines => x.ChangeMap[date].Lines,
+                    Models.Metric.Files => x.ChangeMap[date].Files,
+                    Models.Metric.Commits => x.ChangeMap[date].Commits,
                     _ => 0,
                 } : 0);
                 grandTotal += total;
@@ -215,9 +215,9 @@ public static class TablePrinter
             table.AddColumn(new TableColumn($"{date}\n{dayOfWeek}").Alignment(Justify.Right).Footer(
                 totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? byDay switch
                 {
-                    git_contrib.Models.Metric.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
-                    git_contrib.Models.Metric.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
-                    git_contrib.Models.Metric.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
+                    Models.Metric.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
+                    Models.Metric.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
+                    Models.Metric.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
                     _ => 0,
                 } : 0).ToString("N0")
             ));
@@ -225,18 +225,18 @@ public static class TablePrinter
         table.AddColumn(new TableColumn("Total").Alignment(Justify.Right).Footer(
             totals.Values.Sum(x => byDay switch
             {
-                git_contrib.Models.Metric.Lines => x.TotalLines,
-                git_contrib.Models.Metric.Files => x.ChangeMap.Sum(x => x.Value.Files),
-                git_contrib.Models.Metric.Commits => x.TotalCommits,
+                Models.Metric.Lines => x.TotalLines,
+                Models.Metric.Files => x.ChangeMap.Sum(x => x.Value.Files),
+                Models.Metric.Commits => x.TotalCommits,
                 _ => 0,
             }).ToString("N0")
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => byDay switch
         {
-            git_contrib.Models.Metric.Lines => x.TotalLines,
-            git_contrib.Models.Metric.Files => x.UniqueFiles,
-            git_contrib.Models.Metric.Commits => x.TotalCommits,
+            Models.Metric.Lines => x.TotalLines,
+            Models.Metric.Files => x.UniqueFiles,
+            Models.Metric.Commits => x.TotalCommits,
             _ => x.TotalLines,
         });
         if (reverse)
@@ -254,9 +254,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        git_contrib.Models.Metric.Lines => authorData.ChangeMap[date].Lines,
-                        git_contrib.Models.Metric.Files => authorData.ChangeMap[date].Files,
-                        git_contrib.Models.Metric.Commits => authorData.ChangeMap[date].Commits,
+                        Models.Metric.Lines => authorData.ChangeMap[date].Lines,
+                        Models.Metric.Files => authorData.ChangeMap[date].Files,
+                        Models.Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
                     runningTotal += total;
@@ -273,7 +273,6 @@ public static class TablePrinter
 
         AnsiConsole.Write(table);
     }
-
 
     public static void PrintTableByDayFlipped(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
     {
@@ -293,9 +292,9 @@ public static class TablePrinter
             {
                 return byDay switch
                 {
-                    git_contrib.Models.Metric.LinesFlipped => x.Value.Lines,
-                    git_contrib.Models.Metric.FilesFlipped => x.Value.Files,
-                    git_contrib.Models.Metric.CommitsFlipped => x.Value.Commits,
+                    Models.Metric.Lines => x.Value.Lines,
+                    Models.Metric.Files => x.Value.Files,
+                    Models.Metric.Commits => x.Value.Commits,
                     _ => 0,
                 };
             }).ToString("N0"));
@@ -317,9 +316,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        git_contrib.Models.Metric.LinesFlipped => authorData.ChangeMap[authorDate].Lines,
-                        git_contrib.Models.Metric.FilesFlipped => authorData.ChangeMap[authorDate].Files,
-                        git_contrib.Models.Metric.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
+                        Models.Metric.Lines => authorData.ChangeMap[authorDate].Lines,
+                        Models.Metric.Files => authorData.ChangeMap[authorDate].Files,
+                        Models.Metric.Commits => authorData.ChangeMap[authorDate].Commits,
                         _ => 0,
                     };
                     runningTotal += total;

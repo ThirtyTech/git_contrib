@@ -219,7 +219,7 @@ public static class Work
             }
         }
 
-        if (options.Format == Models.Format.Table)
+        if (options.Format == Format.Table)
         {
             if (options.Metric == null || options.Metric == Models.Metric.All)
             {
@@ -227,14 +227,14 @@ public static class Work
             }
             else
             {
-                TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
+                TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, options.FlipAxes, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
             }
         }
-        else if (options.Format == Models.Format.Json)
+        else if (options.Format == Format.Json)
         {
             Console.WriteLine(JsonSerializer.Serialize(totals, jsonSerializerOptions));
         }
-        else if (options.Format == Models.Format.Chart)
+        else if (options.Format == Format.Chart)
         {
             var chart = new BreakdownChart();
             var random = new Random();
@@ -267,7 +267,7 @@ public static class Work
             }
             AnsiConsole.Write(chart);
         }
-        else if (options.Format == Models.Format.BarChart)
+        else if (options.Format == Format.BarChart)
         {
             var chart = new BarChart();
             // chart.UseValueFormatter(x => x.ToString("N0"));
