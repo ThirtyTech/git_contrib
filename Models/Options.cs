@@ -1,8 +1,10 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Mapster;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+
+namespace git_contrib.Models;
 
 public class Options
 {
@@ -83,6 +85,16 @@ public class Options
 
 public class ConfigOptions
 {
+    private readonly JsonSerializerOptions jsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        Converters =
+                    {
+                        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+                    }
+
+    };
     public ConfigOptions() { }
     public ConfigOptions(string path)
     {
@@ -112,15 +124,7 @@ public class ConfigOptions
             else if (ext == ".json")
             {
                 // Deserialize json
-                var config = JsonSerializer.Deserialize<ConfigOptions>(File.ReadAllText(findConfigPath), new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    PropertyNameCaseInsensitive = true,
-                    Converters =
-                    {
-                        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
-                    }
-                }) ?? throw new Exception("Config file found at: " + findConfigPath + " but could not be deserialized.");
+                var config = JsonSerializer.Deserialize<ConfigOptions>(File.ReadAllText(findConfigPath), jsonSerializerOptions) ?? throw new Exception("Config file found at: " + findConfigPath + " but could not be deserialized.");
                 config.Adapt(this);
             }
         }
@@ -155,3 +159,4 @@ public enum Format
     BarChart,
     None
 }
+

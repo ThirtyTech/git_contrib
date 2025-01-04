@@ -1,5 +1,5 @@
-using System.Text;
 using ConsoleTables;
+using git_contrib.Models;
 using Spectre.Console;
 
 public static class TablePrinter
@@ -153,9 +153,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::Metric.Lines => authorData.ChangeMap[date].Lines,
-                        global::Metric.Files => authorData.ChangeMap[date].Files,
-                        global::Metric.Commits => authorData.ChangeMap[date].Commits,
+                        git_contrib.Models.Metric.Lines => authorData.ChangeMap[date].Lines,
+                        git_contrib.Models.Metric.Files => authorData.ChangeMap[date].Files,
+                        git_contrib.Models.Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
                     runningTotal += total;
@@ -181,9 +181,9 @@ public static class TablePrinter
                 var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
                 var total = totals.Values.Sum(x => x.ChangeMap.ContainsKey(date) ? byDay switch
                 {
-                    global::Metric.Lines => x.ChangeMap[date].Lines,
-                    global::Metric.Files => x.ChangeMap[date].Files,
-                    global::Metric.Commits => x.ChangeMap[date].Commits,
+                    git_contrib.Models.Metric.Lines => x.ChangeMap[date].Lines,
+                    git_contrib.Models.Metric.Files => x.ChangeMap[date].Files,
+                    git_contrib.Models.Metric.Commits => x.ChangeMap[date].Commits,
                     _ => 0,
                 } : 0);
                 grandTotal += total;
@@ -213,9 +213,9 @@ public static class TablePrinter
             table.AddColumn(new TableColumn($"{date}\n{dayOfWeek}").Alignment(Justify.Right).Footer(
                 totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? byDay switch
                 {
-                    global::Metric.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
-                    global::Metric.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
-                    global::Metric.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
+                    git_contrib.Models.Metric.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
+                    git_contrib.Models.Metric.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
+                    git_contrib.Models.Metric.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
                     _ => 0,
                 } : 0).ToString("N0")
             ));
@@ -223,18 +223,18 @@ public static class TablePrinter
         table.AddColumn(new TableColumn("Total").Alignment(Justify.Right).Footer(
             totals.Values.Sum(x => byDay switch
             {
-                global::Metric.Lines => x.TotalLines,
-                global::Metric.Files => x.ChangeMap.Sum(x => x.Value.Files),
-                global::Metric.Commits => x.TotalCommits,
+                git_contrib.Models.Metric.Lines => x.TotalLines,
+                git_contrib.Models.Metric.Files => x.ChangeMap.Sum(x => x.Value.Files),
+                git_contrib.Models.Metric.Commits => x.TotalCommits,
                 _ => 0,
             }).ToString("N0")
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => byDay switch
         {
-            global::Metric.Lines => x.TotalLines,
-            global::Metric.Files => x.UniqueFiles,
-            global::Metric.Commits => x.TotalCommits,
+            git_contrib.Models.Metric.Lines => x.TotalLines,
+            git_contrib.Models.Metric.Files => x.UniqueFiles,
+            git_contrib.Models.Metric.Commits => x.TotalCommits,
             _ => x.TotalLines,
         });
         if (reverse)
@@ -252,9 +252,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::Metric.Lines => authorData.ChangeMap[date].Lines,
-                        global::Metric.Files => authorData.ChangeMap[date].Files,
-                        global::Metric.Commits => authorData.ChangeMap[date].Commits,
+                        git_contrib.Models.Metric.Lines => authorData.ChangeMap[date].Lines,
+                        git_contrib.Models.Metric.Files => authorData.ChangeMap[date].Files,
+                        git_contrib.Models.Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
                     runningTotal += total;
@@ -291,9 +291,9 @@ public static class TablePrinter
             {
                 return byDay switch
                 {
-                    global::Metric.LinesFlipped => x.Value.Lines,
-                    global::Metric.FilesFlipped => x.Value.Files,
-                    global::Metric.CommitsFlipped => x.Value.Commits,
+                    git_contrib.Models.Metric.LinesFlipped => x.Value.Lines,
+                    git_contrib.Models.Metric.FilesFlipped => x.Value.Files,
+                    git_contrib.Models.Metric.CommitsFlipped => x.Value.Commits,
                     _ => 0,
                 };
             }).ToString("N0"));
@@ -315,9 +315,9 @@ public static class TablePrinter
                 {
                     var total = byDay switch
                     {
-                        global::Metric.LinesFlipped => authorData.ChangeMap[authorDate].Lines,
-                        global::Metric.FilesFlipped => authorData.ChangeMap[authorDate].Files,
-                        global::Metric.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
+                        git_contrib.Models.Metric.LinesFlipped => authorData.ChangeMap[authorDate].Lines,
+                        git_contrib.Models.Metric.FilesFlipped => authorData.ChangeMap[authorDate].Files,
+                        git_contrib.Models.Metric.CommitsFlipped => authorData.ChangeMap[authorDate].Commits,
                         _ => 0,
                     };
                     runningTotal += total;

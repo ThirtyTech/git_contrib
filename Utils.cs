@@ -1,6 +1,8 @@
-using System.Globalization;
+﻿using System.Globalization;
 using CliWrap;
 using CliWrap.Buffered;
+
+namespace git_contrib;
 
 public static class Utils
 {
@@ -40,7 +42,7 @@ public static class Utils
         {
             // Running 'git status' command
             var result = await Cli.Wrap("git")
-                .WithArguments(new[] { "-C", path, "status" })
+                .WithArguments(["-C", path, "status"])
                 .WithValidation(CommandResultValidation.ZeroExitCode)
                 .ExecuteBufferedAsync();
 
@@ -56,7 +58,7 @@ public static class Utils
 
     public static string FindNearestGitDirectory(string startPath)
     {
-        DirectoryInfo? dir = new DirectoryInfo(startPath);
+        DirectoryInfo? dir = new(startPath);
 
         while (dir != null)
         {
@@ -91,7 +93,7 @@ public static class Utils
         {
             return false;
         }
-        if (input.Contains("/"))
+        if (input.Contains('/'))
         {
             throw new Exception("Date format not supported. Please use the format: yyyy-MM-dd");
         }
@@ -112,7 +114,7 @@ public static class Utils
             return true;
         }
 
-        if (input.Contains("-"))
+        if (input.Contains('-'))
         {
             if (DateTime.TryParseExact(input, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var _date))
             {

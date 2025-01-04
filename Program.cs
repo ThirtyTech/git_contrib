@@ -1,7 +1,10 @@
-﻿using System.CommandLine;
+﻿
+using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using System.Reflection;
+using git_contrib;
+using git_contrib.Models;
 
 var Version = new Option<bool>("--version", "Show the version information and exit");
 
@@ -22,7 +25,7 @@ parseArgument: (result) =>
 });
 var Metric = new Option<Metric?>("--metric", description: "Which metric to show. Defaults to overall");
 var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
-var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => global::Format.Table);
+var Format = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => git_contrib.Models.Format.Table);
 var HideSummary = new Option<bool>("--hide-summary", description: "Hide project summary details");
 var Reverse = new Option<bool>("--reverse", description: "Reverse the order of the results");
 var AuthorLimit = new Option<int?>("--limit", description: "Limit the number of authors to show");
@@ -76,8 +79,8 @@ root.SetHandler(async (context) =>
         Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? "",
         AuthorLimit = context.ParseResult.GetValueForOption(AuthorLimit),
         HideSummary = context.ParseResult.GetValueForOption(HideSummary),
-        IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? Array.Empty<string>(),
-        IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? Array.Empty<string>(),
+        IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? [],
+        IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? [],
         IgnoreDefaults = context.ParseResult.GetValueForOption(IgnoreDefaults)
     };
 
@@ -96,9 +99,9 @@ root.SetHandler(async (context) =>
         {
             fromDate = fromDate = DateTimeOffset.MinValue;
         }
-        options.FromDate = fromDate.HasValue ? fromDate.Value : DateTimeOffset.MinValue;
+        options.FromDate = fromDate ?? DateTimeOffset.MinValue;
     }
-    else if(fromDate.HasValue)
+    else if (fromDate.HasValue)
     {
         options.FromDate = fromDate.Value;
     }

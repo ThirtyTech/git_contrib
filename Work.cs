@@ -2,11 +2,16 @@
 using CliWrap;
 using CliWrap.Buffered;
 using Spectre.Console;
+using git_contrib.Models;
+
+namespace git_contrib;
 
 public static class Work
 {
+
+    private readonly static JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
     // TODO: Make this externally configurable.
-    public static string[] ExcludeExtensions = [
+    private readonly static string[] ExcludeExtensions = [
         ".jpg",
         ".jpeg",
         ".png",
@@ -27,8 +32,7 @@ public static class Work
         ".pdf"
         ];
 
-
-    public static Color[] Colors = [
+    private readonly static Color[] Colors = [
             Color.Red,
             Color.Blue,
             Color.Yellow,
@@ -75,7 +79,7 @@ public static class Work
     public static async Task<IEnumerable<AuthorData>?> DoWork_Internal(Options options)
     {
 
-        if (options.Format == global::Format.Table)
+        if (options.Format == Models.Format.Table)
         {
             Console.WriteLine("Processing directory: " + options.Path);
         }
@@ -91,7 +95,7 @@ public static class Work
 
         await Cli.Wrap("git")
             .WithValidation(CommandResultValidation.None)
-            .WithArguments(new[] { "fetch", "--all" })
+            .WithArguments(["fetch", "--all"])
             .WithWorkingDirectory(options.Path)
             .ExecuteBufferedAsync();
 
@@ -129,7 +133,7 @@ public static class Work
                     continue;
                 }
 
-                if (line.StartsWith("^"))
+                if (line.StartsWith('^'))
                 {
                     var parts = line.Split('|');
                     var commit = parts[0][1..];
@@ -177,9 +181,9 @@ public static class Work
                     }
                     else
                     {
-                        if (totals[author].ChangeMap.ContainsKey(authorDateStr))
+                        if (totals[author].ChangeMap.TryGetValue(authorDateStr, out ChangeSet? value))
                         {
-                            totals[author].ChangeMap[authorDateStr].Commits++;
+                            value.Commits++;
                         }
                         else
                         {
@@ -215,25 +219,22 @@ public static class Work
             }
         }
 
-        if (options.Format == global::Format.Table)
+        if (options.Format == Models.Format.Table)
         {
-            if (options.Metric == null || options.Metric == global::Metric.All)
+            if (options.Metric == null || options.Metric == Models.Metric.All)
             {
                 TablePrinter.PrintTableTotalsSelector(totals, options.HideSummary, options.Reverse, options.AuthorLimit);
             }
             else
             {
-                TablePrinter.PrintTableByDaySelector(options.Metric ?? global::Metric.Lines, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
+                TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
             }
         }
-        else if (options.Format == global::Format.Json)
+        else if (options.Format == Models.Format.Json)
         {
-            Console.WriteLine(JsonSerializer.Serialize(totals, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            }));
+            Console.WriteLine(JsonSerializer.Serialize(totals, jsonSerializerOptions));
         }
-        else if (options.Format == global::Format.Chart)
+        else if (options.Format == Models.Format.Chart)
         {
             var chart = new BreakdownChart();
             var random = new Random();
@@ -243,9 +244,9 @@ public static class Work
             int index = 0;
             foreach (var author in totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => options.Metric switch
             {
-                global::Metric.Lines => x.Additions + x.Deletions,
-                global::Metric.Commits => x.Commits,
-                global::Metric.Files => x.FileItems.Count,
+                Models.Metric.Lines => x.Additions + x.Deletions,
+                Models.Metric.Commits => x.Commits,
+                Models.Metric.Files => x.FileItems.Count,
                 _ => x.Additions + x.Deletions
 
             })).Take(options.AuthorLimit ?? int.MaxValue))
@@ -253,11 +254,11 @@ public static class Work
                 var authorName = author.Value.Name;
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
-                var authorTotal = authorData.Values.Sum(x=> options.Metric switch
+                var authorTotal = authorData.Values.Sum(x => options.Metric switch
                 {
-                    global::Metric.Lines => x.Additions + x.Deletions,
-                    global::Metric.Commits => x.Commits,
-                    global::Metric.Files => x.FileItems.Count,
+                    Models.Metric.Lines => x.Additions + x.Deletions,
+                    Models.Metric.Commits => x.Commits,
+                    Models.Metric.Files => x.FileItems.Count,
                     _ => x.Additions + x.Deletions
 
                 });
@@ -266,7 +267,7 @@ public static class Work
             }
             AnsiConsole.Write(chart);
         }
-        else if (options.Format == global::Format.BarChart)
+        else if (options.Format == Models.Format.BarChart)
         {
             var chart = new BarChart();
             // chart.UseValueFormatter(x => x.ToString("N0"));
@@ -276,9 +277,9 @@ public static class Work
             int index = 0;
             var sorted = totals.OrderByDescending(x => x.Value.ChangeMap.Values.Sum(x => options.Metric switch
             {
-                global::Metric.Lines => x.Additions + x.Deletions,
-                global::Metric.Commits => x.Commits,
-                global::Metric.Files => x.FileItems.Count,
+                Models.Metric.Lines => x.Additions + x.Deletions,
+                Models.Metric.Commits => x.Commits,
+                Models.Metric.Files => x.FileItems.Count,
                 _ => x.Additions + x.Deletions
 
             })).Take(options.AuthorLimit ?? int.MaxValue);
@@ -286,9 +287,9 @@ public static class Work
             {
                 sorted = totals.OrderBy(x => x.Value.ChangeMap.Values.Sum(x => options.Metric switch
                 {
-                    global::Metric.Lines => x.Additions + x.Deletions,
-                    global::Metric.Commits => x.Commits,
-                    global::Metric.Files => x.FileItems.Count,
+                    Models.Metric.Lines => x.Additions + x.Deletions,
+                    Models.Metric.Commits => x.Commits,
+                    Models.Metric.Files => x.FileItems.Count,
                     _ => x.Additions + x.Deletions
 
                 })).Take(options.AuthorLimit ?? int.MaxValue);
@@ -298,11 +299,11 @@ public static class Work
                 var authorName = author.Value.Name;
                 var authorEmail = author.Value.Email;
                 var authorData = author.Value.ChangeMap;
-                var authorTotal = authorData.Values.Sum(x=> options.Metric switch
+                var authorTotal = authorData.Values.Sum(x => options.Metric switch
                 {
-                    global::Metric.Lines => x.Additions + x.Deletions,
-                    global::Metric.Commits => x.Commits,
-                    global::Metric.Files => x.FileItems.Count,
+                    Models.Metric.Lines => x.Additions + x.Deletions,
+                    Models.Metric.Commits => x.Commits,
+                    Models.Metric.Files => x.FileItems.Count,
                     _ => x.Additions + x.Deletions
 
                 });
@@ -314,6 +315,6 @@ public static class Work
             AnsiConsole.Write(chart);
         }
 
-        return totals.Select(x => x.Value).ToList();
+        return [.. totals.Select(x => x.Value)];
     }
 }
