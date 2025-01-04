@@ -19,32 +19,26 @@ using the dotnet platform.
 
 ```text
 Description:
-  Git Contrib v0.2 gives statistics by authors to the project.
+  Git Contrib v0.2.7.0 gives statistics by authors to the project.
 
 Usage:
-  git_contrib [<path>] [command] [options]
+  gitcontrib [<path>] [options]
 
 Arguments:
-  <path>  Path to search for git repositories [default: 
-          /home/jsheely/Projects/ThirtyTech/git_contrib]
+  <path>  Path to search for git repositories [default: /]
 
 Options:
-  --version                                     Show the version information and exit
-  --from <from>                                 Starting date for commits to be considered
-  --to <to>                                     Ending date for commits to be considered
-  --mailmap <mailmap>                           Path to mailmap file
-  --format <BarChart|Chart|Json|None|Table>     Format to output results in [default: Table]
-  --show-summary                                Show project summary details
-  --ignore-authors <ignore-authors>             Authors to ignore
-  --ignore-files <ignore-files>                 Files to ignore
-  --by-day                                      Show results by day
-  <Commits|CommitsFlipped|Files|FilesFlipped|L
-  ines|LinesFlipped>
-  --reverse                                     Reverse the order of the results
-  --limit <limit>                               Limit the number of authors to show
-  -?, -h, --help                                Show help and usage information
-
-
-Commands:
-  config <path>  Configure defaults for the tool
+  --version                                                                    Show the version information and exit
+  --from <from>                                                                Starting date for commits to be considered
+  --to <to>                                                                    Ending date for commits to be considered
+  --mailmap <mailmap>                                                          Path to mailmap file
+  --format <BarChart|Chart|Json|None|Table>                                    Format to output results in [default: Table]
+  --hide-summary                                                               Hide project summary details
+  --ignore-authors <ignore-authors>                                            Authors to ignore
+  --ignore-files <ignore-files>                                                Files to ignore
+  --metric <All|Commits|CommitsFlipped|Files|FilesFlipped|Lines|LinesFlipped>  Which metric to show. Defaults to overall
+  --reverse                                                                    Reverse the order of the results
+  --limit <limit>                                                              Limit the number of authors to show
+  --ignore-defaults                                                            Ignore default found in .gitcontrib
+  -?, -h, --help                                                               Show help and usage information
 ```
