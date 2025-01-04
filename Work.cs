@@ -227,7 +227,7 @@ public static class Work
             }
             else
             {
-                TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, options.FlipAxes, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
+                TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, options.SwapAxes, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
             }
         }
         else if (options.Format == Format.Json)
