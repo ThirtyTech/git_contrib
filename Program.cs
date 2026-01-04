@@ -1,88 +1,177 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Reflection;
 using git_contrib;
 using git_contrib.Models;
 
-var Version = new Option<bool>("--version", "Show the version information and exit");
-
-var RepoPath = new Argument<string>("path", description: "Path to search for git repositories", getDefaultValue: Directory.GetCurrentDirectory);
-var FromDate = new Option<DateTimeOffset?>("--from", description: "Starting date for commits to be considered",
-parseArgument: (result) =>
+var repoPathArgument = new Argument<string>("path")
 {
-    var input = result.Tokens.Single().Value;
-    return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.MinValue;
+    Description = "Path to search for git repositories",
+    DefaultValueFactory = _ => Directory.GetCurrentDirectory()
+};
 
-});
-var ToDate = new Option<DateTimeOffset?>("--to", description: "Ending date for commits to be considered",
-parseArgument: (result) =>
+// Keep human-readable parsing (e.g., "yesterday", "1w") by validating and parsing ourselves.
+var fromOption = new Option<string?>("--from")
 {
-    var input = result.Tokens.Single().Value;
-    return Utils.TryParseHumanReadableDateTimeOffset(input, out var _date) ? _date : DateTimeOffset.Now;
-
-});
-var Metric = new Option<Metric?>("--metric", description: "Which metric to show. Defaults to overall");
-var SwapAxes = new Option<bool>("--swap", description: "Flip the axes of the output");
-var Mailmap = new Option<string>("--mailmap", description: "Path to mailmap file");
-var OutputFormat = new Option<Format>("--format", description: "Format to output results in", getDefaultValue: () => Format.Table);
-var HideSummary = new Option<bool>("--hide-summary", description: "Hide project summary details");
-var Reverse = new Option<bool>("--reverse", description: "Reverse the order of the results");
-var AuthorLimit = new Option<int?>("--limit", description: "Limit the number of authors to show");
-var IgnoreAuthors = new Option<string[]>("--ignore-authors", description: "Authors to ignore") { AllowMultipleArgumentsPerToken = true };
-var IgnoreFiles = new Option<string[]>("--ignore-files", description: "Files to ignore") { AllowMultipleArgumentsPerToken = true };
-var IgnoreDefaults = new Option<bool>("--ignore-defaults", description: "Ignore default found in .gitcontrib");
-
-var root = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version} gives statistics by authors to the project.") {
-            Version,
-            FromDate,
-            ToDate,
-            RepoPath,
-            Mailmap,
-            OutputFormat,
-            HideSummary,
-            IgnoreAuthors,
-            IgnoreFiles,
-            Metric,
-            Reverse,
-            SwapAxes,
-            AuthorLimit,
-            IgnoreDefaults
-        };
-
-root.SetHandler(async (context) =>
+    Description = "Starting date for commits to be considered",
+    Arity = ArgumentArity.ZeroOrOne
+};
+fromOption.Validators.Add(result =>
 {
-    if (context.ParseResult.GetValueForOption(Version))
+    if (result.Tokens.Count == 0)
     {
-        Console.WriteLine($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version}");
         return;
     }
 
-    var path = context.ParseResult.GetValueForArgument(RepoPath);
-    var byDay = context.ParseResult.GetValueForOption(Metric);
-    var fromDate = context.ParseResult.GetValueForOption(FromDate);
+    var input = result.Tokens.Single().Value;
+    if (!Utils.TryParseHumanReadableDateTimeOffset(input, out _))
+    {
+        result.AddError($"Invalid value for --from: {input}");
+    }
+});
+
+var toOption = new Option<string?>("--to")
+{
+    Description = "Ending date for commits to be considered",
+    Arity = ArgumentArity.ZeroOrOne
+};
+toOption.Validators.Add(result =>
+{
+    if (result.Tokens.Count == 0)
+    {
+        return;
+    }
+
+    var input = result.Tokens.Single().Value;
+    if (!Utils.TryParseHumanReadableDateTimeOffset(input, out _))
+    {
+        result.AddError($"Invalid value for --to: {input}");
+    }
+});
+
+var metricOption = new Option<Metric?>("--metric")
+{
+    Description = "Which metric to show. Defaults to overall"
+};
+
+var swapAxesOption = new Option<bool>("--swap")
+{
+    Description = "Flip the axes of the output"
+};
+
+var mailmapOption = new Option<string>("--mailmap")
+{
+    Description = "Path to mailmap file",
+    DefaultValueFactory = _ => "",
+    Arity = ArgumentArity.ZeroOrOne
+};
+
+var outputFormatOption = new Option<Format>("--format")
+{
+    Description = "Format to output results in",
+    DefaultValueFactory = _ => Format.Table
+};
+
+var hideSummaryOption = new Option<bool>("--hide-summary")
+{
+    Description = "Hide project summary details"
+};
+
+var reverseOption = new Option<bool>("--reverse")
+{
+    Description = "Reverse the order of the results"
+};
+
+var authorLimitOption = new Option<int?>("--limit")
+{
+    Description = "Limit the number of authors to show"
+};
+
+var ignoreAuthorsOption = new Option<string[]>("--ignore-authors")
+{
+    Description = "Authors to ignore",
+    AllowMultipleArgumentsPerToken = true,
+    DefaultValueFactory = _ => Array.Empty<string>()
+};
+
+var ignoreFilesOption = new Option<string[]>("--ignore-files")
+{
+    Description = "Files to ignore",
+    AllowMultipleArgumentsPerToken = true,
+    DefaultValueFactory = _ => Array.Empty<string>()
+};
+
+var ignoreDefaultsOption = new Option<bool>("--ignore-defaults")
+{
+    Description = "Ignore default found in .gitcontrib"
+};
+
+var rootCommand = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version} gives statistics by authors to the project.")
+{
+    repoPathArgument,
+    fromOption,
+    toOption,
+    metricOption,
+    swapAxesOption,
+    mailmapOption,
+    outputFormatOption,
+    hideSummaryOption,
+    reverseOption,
+    authorLimitOption,
+    ignoreAuthorsOption,
+    ignoreFilesOption,
+    ignoreDefaultsOption
+};
+
+rootCommand.SetAction(async (parseResult, cancellationToken) =>
+{
+    var path = parseResult.GetValue(repoPathArgument) ?? Directory.GetCurrentDirectory();
+    var metric = parseResult.GetValue(metricOption);
+    var swapAxes = parseResult.GetValue(swapAxesOption);
+    var outputFormat = parseResult.GetValue(outputFormatOption);
+    var mailmap = parseResult.GetValue(mailmapOption) ?? "";
+    var hideSummary = parseResult.GetValue(hideSummaryOption);
+    var reverse = parseResult.GetValue(reverseOption);
+    var authorLimit = parseResult.GetValue(authorLimitOption);
+    var ignoreAuthors = parseResult.GetValue(ignoreAuthorsOption);
+    var ignoreFiles = parseResult.GetValue(ignoreFilesOption);
+    var ignoreDefaults = parseResult.GetValue(ignoreDefaultsOption);
+
+    var defaultOptions = new ConfigOptions(path);
+
+    DateTimeOffset? fromDate = null;
+    var fromValue = parseResult.GetValue(fromOption);
+    if (!string.IsNullOrWhiteSpace(fromValue) && Utils.TryParseHumanReadableDateTimeOffset(fromValue, out var parsedFrom))
+    {
+        fromDate = parsedFrom;
+    }
+
+    var toDate = DateTimeOffset.Now;
+    var toValue = parseResult.GetValue(toOption);
+    if (!string.IsNullOrWhiteSpace(toValue) && Utils.TryParseHumanReadableDateTimeOffset(toValue, out var parsedTo))
+    {
+        toDate = parsedTo;
+    }
 
     if (!await Utils.IsGitDirectoryAsync(path))
     {
         Console.WriteLine("Not a git directory: " + path);
-        return;
+        return 1;
     }
-
-    var defaultOptions = new ConfigOptions(path);
 
     var options = new Options
     {
-        ToDate = context.ParseResult.GetValueForOption(ToDate) ?? DateTimeOffset.Now,
-        Metric = context.ParseResult.GetValueForOption(Metric),
-        SwapAxes = context.ParseResult.GetValueForOption(SwapAxes),
-        Path = context.ParseResult.GetValueForArgument(RepoPath),
-        Format = context.ParseResult.GetValueForOption(OutputFormat),
-        Reverse = context.ParseResult.GetValueForOption(Reverse),
-        Mailmap = context.ParseResult.GetValueForOption(Mailmap) ?? "",
-        AuthorLimit = context.ParseResult.GetValueForOption(AuthorLimit),
-        HideSummary = context.ParseResult.GetValueForOption(HideSummary),
-        IgnoreAuthors = context.ParseResult.GetValueForOption(IgnoreAuthors) ?? [],
-        IgnoreFiles = context.ParseResult.GetValueForOption(IgnoreFiles) ?? [],
-        IgnoreDefaults = context.ParseResult.GetValueForOption(IgnoreDefaults)
+        ToDate = toDate,
+        Metric = metric,
+        SwapAxes = swapAxes,
+        Path = path,
+        Format = outputFormat,
+        Reverse = reverse,
+        Mailmap = mailmap,
+        AuthorLimit = authorLimit,
+        HideSummary = hideSummary,
+        IgnoreAuthors = ignoreAuthors ?? [],
+        IgnoreFiles = ignoreFiles ?? [],
+        IgnoreDefaults = ignoreDefaults
     };
 
     if (!options.IgnoreDefaults && !defaultOptions.IsEmpty)
@@ -99,15 +188,7 @@ root.SetHandler(async (context) =>
 
     if (!fromDate.HasValue && string.IsNullOrWhiteSpace(defaultOptions.FromDate))
     {
-        if (byDay.HasValue)
-        {
-            fromDate = DateTimeOffset.Now.AddDays(-6);
-        }
-        else
-        {
-            fromDate = fromDate = DateTimeOffset.MinValue;
-        }
-        options.FromDate = fromDate ?? DateTimeOffset.MinValue;
+        options.FromDate = metric.HasValue ? DateTimeOffset.Now.AddDays(-6) : DateTimeOffset.MinValue;
     }
     else if (fromDate.HasValue)
     {
@@ -115,16 +196,7 @@ root.SetHandler(async (context) =>
     }
 
     await Work.DoWork(options);
+    return 0;
 });
 
-
-var result = root.Parse(args);
-if (result.Errors.Count > 0)
-{
-    foreach (var error in result.Errors)
-    {
-        Console.WriteLine(error.Message);
-    }
-    return 0;
-}
-return 1;
+return rootCommand.Parse(args).Invoke();
