@@ -1,6 +1,5 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
+using System.CommandLine.Invocation;
 using System.Reflection;
 using git_contrib;
 using git_contrib.Models;
@@ -118,10 +117,14 @@ root.SetHandler(async (context) =>
     await Work.DoWork(options);
 });
 
-return await new CommandLineBuilder(root)
-    .UseHelp()
-    .UseSuggestDirective()
-    .UseTypoCorrections()
-    .RegisterWithDotnetSuggest()
-    .Build()
-    .InvokeAsync(args);
+
+var result = root.Parse(args);
+if (result.Errors.Count > 0)
+{
+    foreach (var error in result.Errors)
+    {
+        Console.WriteLine(error.Message);
+    }
+    return 0;
+}
+return 1;

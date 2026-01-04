@@ -4,7 +4,7 @@
     <AssemblyName>gitcontrib</AssemblyName>
     <OutputType>Exe</OutputType>
     <SelfContained>true</SelfContained>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishTrimmed>false</PublishTrimmed>
@@ -16,12 +16,12 @@
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="cliwrap" Version="3.6.4" />
-    <PackageReference Include="ConsoleTables" Version="2.6.1" />
+    <PackageReference Include="cliwrap" Version="3.10.0" />
+    <PackageReference Include="ConsoleTables" Version="2.7.0" />
     <PackageReference Include="Mapster" Version="7.4.0" />
-    <PackageReference Include="Spectre.Console" Version="0.48.0" />
-    <PackageReference Include="System.Commandline" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="yamldotnet" Version="15.1.0" />
+    <PackageReference Include="Spectre.Console" Version="0.54.0" />
+    <PackageReference Include="System.Commandline" Version="2.0.1" />
+    <PackageReference Include="yamldotnet" Version="16.3.0" />
   </ItemGroup>
 
   <!-- <ItemGroup>
