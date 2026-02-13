@@ -41,8 +41,9 @@ public static class TablePrinter
             var authorTotalCommits = authorData.TotalCommits;
             var authorTotalFiles = authorData.UniqueFiles;
             var authorTotalLines = authorData.TotalLines;
+            var authorAsterisk = AuthorHasHiddenDayData(authorData, hideDays) ? "*" : "";
 
-            table.AddRow(authorData.Name, authorTotalCommits.ToString("N0"), authorTotalFiles.ToString("N0"), authorTotalLines.ToString("N0"));
+            table.AddRow(authorData.Name, authorTotalCommits.ToString("N0") + authorAsterisk, authorTotalFiles.ToString("N0") + authorAsterisk, authorTotalLines.ToString("N0") + authorAsterisk);
 
             if (!hideSummary)
             {
@@ -54,7 +55,7 @@ public static class TablePrinter
 
         if (!hideSummary)
         {
-            var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
+            var asterisk = HasHiddenDayData(totals, hideDays) ? "*" : "";
             table.AddRow("Summary Totals", totalCommits.ToString("N0") + asterisk, totalFiles.ToString("N0") + asterisk, totalLines.ToString("N0") + asterisk);
         }
 
@@ -64,7 +65,7 @@ public static class TablePrinter
 
     private static void PrintTableTotals(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null, DayOfWeek[]? hideDays = null)
     {
-        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
+        var summaryAsterisk = HasHiddenDayData(totals, hideDays) ? "*" : "";
         var table = new Table
         {
             ShowFooters = !hideSummary
@@ -74,13 +75,13 @@ public static class TablePrinter
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Author").Footer("Summary Totals"));
         table.AddColumn(new TableColumn("Commits").Alignment(Justify.Right).Footer(
-            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalCommits).ToString("N0") + asterisk
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalCommits).ToString("N0") + summaryAsterisk
         ));
         table.AddColumn(new TableColumn("Files").Alignment(Justify.Right).Footer(
-            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.UniqueFiles).ToString("N0") + asterisk
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.UniqueFiles).ToString("N0") + summaryAsterisk
         ));
         table.AddColumn(new TableColumn("Lines").Alignment(Justify.Right).Footer(
-            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalLines).ToString("N0") + asterisk
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalLines).ToString("N0") + summaryAsterisk
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
@@ -101,8 +102,9 @@ public static class TablePrinter
             var authorTotalCommits = authorData.TotalCommits;
             var authorTotalFiles = authorData.UniqueFiles;
             var authorTotalLines = authorData.TotalLines;
+            var authorAsterisk = AuthorHasHiddenDayData(authorData, hideDays) ? "*" : "";
 
-            table.AddRow(authorData.Name, authorTotalCommits.ToString("N0"), authorTotalFiles.ToString("N0"), authorTotalLines.ToString("N0"));
+            table.AddRow(authorData.Name, authorTotalCommits.ToString("N0") + authorAsterisk, authorTotalFiles.ToString("N0") + authorAsterisk, authorTotalLines.ToString("N0") + authorAsterisk);
         }
 
         AnsiConsole.Write(table);
@@ -133,7 +135,6 @@ public static class TablePrinter
         var table = new ConsoleTable("Author");
         table.Options.EnableCount = false;
         var days = (toDate - fromDate).Days;
-        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
 
         for (int i = 0; i <= days; i++)
         {
@@ -153,6 +154,7 @@ public static class TablePrinter
         {
             List<string> row = new List<string> { authorData.Name };
             var runningTotal = 0;
+            var authorHasHidden = false;
             for (int i = 0; i <= days; i++)
             {
                 var currentDate = fromDate.AddDays(i);
@@ -171,10 +173,14 @@ public static class TablePrinter
                 }
                 runningTotal += dayValue;
 
-                if (hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek)) continue;
+                if (hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek))
+                {
+                    if (dayValue > 0) authorHasHidden = true;
+                    continue;
+                }
                 row.Add(dayValue == 0 ? "0" : dayValue.ToString("N0"));
             }
-            row.Add(runningTotal.ToString("N0") + asterisk);
+            row.Add(runningTotal.ToString("N0") + (authorHasHidden ? "*" : ""));
             table.AddRow(row.ToArray());
         }
 
@@ -202,7 +208,7 @@ public static class TablePrinter
                 row.Add(total.ToString("N0"));
             }
 
-            row.Add(grandTotal.ToString("N0") + asterisk);
+            row.Add(grandTotal.ToString("N0") + (HasHiddenDayData(totals, hideDays) ? "*" : ""));
             table.AddRow(row.ToArray());
         }
         table.Write();
@@ -218,7 +224,7 @@ public static class TablePrinter
         table.AddColumn(new TableColumn("Author").NoWrap().Footer("Summary"));
         table.ShowFooters = !hideSummary;
         var days = (toDate - fromDate).Days;
-        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
+        var summaryAsterisk = HasHiddenDayData(totals, hideDays) ? "*" : "";
 
         for (int i = 0; i <= days; i++)
         {
@@ -244,7 +250,7 @@ public static class TablePrinter
                 Models.Metric.Files => x.ChangeMap.Sum(x => x.Value.Files),
                 Models.Metric.Commits => x.TotalCommits,
                 _ => 0,
-            }).ToString("N0") + asterisk
+            }).ToString("N0") + summaryAsterisk
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => byDay switch
@@ -262,6 +268,7 @@ public static class TablePrinter
         {
             List<string> row = [authorData.Name];
             var runningTotal = 0;
+            var authorHasHidden = false;
             for (int i = 0; i <= days; i++)
             {
                 var currentDate = fromDate.AddDays(i);
@@ -281,10 +288,14 @@ public static class TablePrinter
                 }
                 runningTotal += dayValue;
 
-                if (isHidden) continue;
+                if (isHidden)
+                {
+                    if (dayValue > 0) authorHasHidden = true;
+                    continue;
+                }
                 row.Add(dayValue == 0 ? "0" : dayValue.ToString("N0"));
             }
-            row.Add(runningTotal.ToString("N0") + asterisk);
+            row.Add(runningTotal.ToString("N0") + (authorHasHidden ? "*" : ""));
             table.AddRow(row.ToArray());
         }
 
@@ -300,11 +311,11 @@ public static class TablePrinter
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Date").Footer("Summary"));
         table.ShowFooters = !hideSummary;
-        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
 
         var grandTotal = 0;
         foreach (var authorData in totals.Values)
         {
+            var authorAsterisk = AuthorHasHiddenDayData(authorData, hideDays) ? "*" : "";
             var column = new TableColumn(authorData.Name).Alignment(Justify.Right);
             column.Footer(authorData.ChangeMap.Sum(x =>
             {
@@ -315,7 +326,7 @@ public static class TablePrinter
                     Models.Metric.Commits => x.Value.Commits,
                     _ => 0,
                 };
-            }).ToString("N0") + asterisk);
+            }).ToString("N0") + authorAsterisk);
             table.AddColumn(column);
         }
 
@@ -366,7 +377,7 @@ public static class TablePrinter
             }));
         }
 
-        table.Columns.Last().Footer(grandTotal.ToString("N0") + asterisk);
+        table.Columns.Last().Footer(grandTotal.ToString("N0") + (HasHiddenDayData(totals, hideDays) ? "*" : ""));
 
         AnsiConsole.Write(table);
     }
@@ -374,7 +385,11 @@ public static class TablePrinter
     private static bool IsSkippedDay(DateTimeOffset date, DayOfWeek[]? days) =>
         days is { Length: > 0 } && days.Contains(date.DayOfWeek);
 
-    private static bool HasHiddenDayData(Dictionary<string, AuthorData> totals, DayOfWeek[] hideDays) =>
-        totals.Values.Any(a => a.ChangeMap.Keys.Any(dateStr =>
-            DateTime.TryParse(dateStr, out var date) && hideDays.Contains(date.DayOfWeek)));
+    private static bool HasHiddenDayData(Dictionary<string, AuthorData> totals, DayOfWeek[]? hideDays) =>
+        hideDays is { Length: > 0 } && totals.Values.Any(a => AuthorHasHiddenDayData(a, hideDays));
+
+    private static bool AuthorHasHiddenDayData(AuthorData author, DayOfWeek[]? hideDays) =>
+        hideDays is { Length: > 0 } && author.ChangeMap.Any(kvp =>
+            DateTime.TryParse(kvp.Key, out var date) && hideDays.Contains(date.DayOfWeek) &&
+            (kvp.Value.Lines > 0 || kvp.Value.Commits > 0 || kvp.Value.Files > 0));
 }
