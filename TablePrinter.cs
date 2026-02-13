@@ -1,4 +1,4 @@
-using ConsoleTables;
+﻿using ConsoleTables;
 using git_contrib.Models;
 using Spectre.Console;
 
@@ -6,18 +6,18 @@ namespace git_contrib;
 
 public static class TablePrinter
 {
-    public static void PrintTableTotalsSelector(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
+    public static void PrintTableTotalsSelector(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null, DayOfWeek[]? hideDays = null)
     {
         if (Console.IsOutputRedirected)
         {
-            PrintTableTotalsPiped(totals, hideSummary, reverse, limit);
+            PrintTableTotalsPiped(totals, hideSummary, reverse, limit, hideDays);
         }
         else
         {
-            PrintTableTotals(totals, hideSummary, reverse, limit);
+            PrintTableTotals(totals, hideSummary, reverse, limit, hideDays);
         }
     }
-    private static void PrintTableTotalsPiped(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
+    private static void PrintTableTotalsPiped(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null, DayOfWeek[]? hideDays = null)
     {
         var table = new ConsoleTable("Author", "Commits", "Files", "Lines");
         table.Options.EnableCount = false;
@@ -54,15 +54,17 @@ public static class TablePrinter
 
         if (!hideSummary)
         {
-            table.AddRow("Summary Totals", totalCommits.ToString("N0"), totalFiles.ToString("N0"), totalLines.ToString("N0"));
+            var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
+            table.AddRow("Summary Totals", totalCommits.ToString("N0") + asterisk, totalFiles.ToString("N0") + asterisk, totalLines.ToString("N0") + asterisk);
         }
 
         table.Write();
     }
 
 
-    private static void PrintTableTotals(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null)
+    private static void PrintTableTotals(Dictionary<string, AuthorData> totals, bool hideSummary = false, bool reverse = false, int? limit = null, DayOfWeek[]? hideDays = null)
     {
+        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
         var table = new Table
         {
             ShowFooters = !hideSummary
@@ -72,13 +74,13 @@ public static class TablePrinter
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Author").Footer("Summary Totals"));
         table.AddColumn(new TableColumn("Commits").Alignment(Justify.Right).Footer(
-            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalCommits).ToString("N0")
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalCommits).ToString("N0") + asterisk
         ));
         table.AddColumn(new TableColumn("Files").Alignment(Justify.Right).Footer(
-            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.UniqueFiles).ToString("N0")
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.UniqueFiles).ToString("N0") + asterisk
         ));
         table.AddColumn(new TableColumn("Lines").Alignment(Justify.Right).Footer(
-            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalLines).ToString("N0")
+            totals.Values.Take(limit ?? int.MaxValue).Sum(x => x.TotalLines).ToString("N0") + asterisk
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => x.TotalLines);
@@ -106,35 +108,38 @@ public static class TablePrinter
         AnsiConsole.Write(table);
     }
 
-    public static void PrintTableByDaySelector(Metric byDay, bool flipped, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDaySelector(Metric byDay, bool flipped, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false, DayOfWeek[]? hideDays = null)
     {
         if (flipped)
         {
-            PrintTableByDayFlipped(byDay, totals, fromDate, toDate, hideSummary, reverse);
+            PrintTableByDayFlipped(byDay, totals, fromDate, toDate, hideSummary, reverse, hideDays);
         }
         else
         {
             if (Console.IsOutputRedirected)
             {
-                PrintTableByDayPiped(byDay, totals, fromDate, toDate, hideSummary, reverse);
+                PrintTableByDayPiped(byDay, totals, fromDate, toDate, hideSummary, reverse, hideDays);
             }
             else
             {
-                PrintTableByDay(byDay, totals, fromDate, toDate, hideSummary, reverse);
+                PrintTableByDay(byDay, totals, fromDate, toDate, hideSummary, reverse, hideDays);
             }
         }
 
     }
 
-    private static void PrintTableByDayPiped(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    private static void PrintTableByDayPiped(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false, DayOfWeek[]? hideDays = null)
     {
         var table = new ConsoleTable("Author");
         table.Options.EnableCount = false;
         var days = (toDate - fromDate).Days;
+        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
 
         for (int i = 0; i <= days; i++)
         {
-            table.AddColumn([fromDate.AddDays(i).ToString("MM-dd")]);
+            var currentDate = fromDate.AddDays(i);
+            if (hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek)) continue;
+            table.AddColumn([currentDate.ToString("MM-dd")]);
         }
         table.AddColumn(["Total"]);
 
@@ -150,25 +155,26 @@ public static class TablePrinter
             var runningTotal = 0;
             for (int i = 0; i <= days; i++)
             {
-                var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
+                var currentDate = fromDate.AddDays(i);
+                var date = currentDate.ToString("yyyy-MM-dd");
+
+                int dayValue = 0;
                 if (authorData.ChangeMap.ContainsKey(date))
                 {
-                    var total = byDay switch
+                    dayValue = byDay switch
                     {
                         Models.Metric.Lines => authorData.ChangeMap[date].Lines,
                         Models.Metric.Files => authorData.ChangeMap[date].Files,
                         Models.Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
-                    runningTotal += total;
-                    row.Add(total.ToString("N0"));
                 }
-                else
-                {
-                    row.Add("0");
-                }
+                runningTotal += dayValue;
+
+                if (hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek)) continue;
+                row.Add(dayValue == 0 ? "0" : dayValue.ToString("N0"));
             }
-            row.Add(runningTotal.ToString("N0"));
+            row.Add(runningTotal.ToString("N0") + asterisk);
             table.AddRow(row.ToArray());
         }
 
@@ -180,7 +186,9 @@ public static class TablePrinter
             var grandTotal = 0;
             for (int i = 0; i <= days; i++)
             {
-                var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
+                var currentDate = fromDate.AddDays(i);
+                var date = currentDate.ToString("yyyy-MM-dd");
+                bool isHidden = hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek);
                 var total = totals.Values.Sum(x => x.ChangeMap.ContainsKey(date) ? byDay switch
                 {
                     Models.Metric.Lines => x.ChangeMap[date].Lines,
@@ -189,17 +197,19 @@ public static class TablePrinter
                     _ => 0,
                 } : 0);
                 grandTotal += total;
+
+                if (isHidden) continue;
                 row.Add(total.ToString("N0"));
             }
 
-            row.Add(grandTotal.ToString("N0"));
+            row.Add(grandTotal.ToString("N0") + asterisk);
             table.AddRow(row.ToArray());
         }
         table.Write();
     }
 
 
-    public static void PrintTableByDay(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDay(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false, DayOfWeek[]? hideDays = null)
     {
         var table = new Table();
         table.Title($"{byDay} by Author");
@@ -208,16 +218,21 @@ public static class TablePrinter
         table.AddColumn(new TableColumn("Author").NoWrap().Footer("Summary"));
         table.ShowFooters = !hideSummary;
         var days = (toDate - fromDate).Days;
+        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
+
         for (int i = 0; i <= days; i++)
         {
-            var date = fromDate.AddDays(i).ToString("MM-dd");
-            var dayOfWeek = fromDate.AddDays(i).DayOfWeek.ToString().Substring(0, 2);
+            var currentDate = fromDate.AddDays(i);
+            if (hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek)) continue;
+            var date = currentDate.ToString("MM-dd");
+            var dayOfWeek = currentDate.DayOfWeek.ToString().Substring(0, 2);
+            var dateStr = currentDate.ToString("yyyy-MM-dd");
             table.AddColumn(new TableColumn($"{date}\n{dayOfWeek}").Alignment(Justify.Right).Footer(
-                totals.Values.Sum(x => x.ChangeMap.ContainsKey(fromDate.AddDays(i).ToString("yyyy-MM-dd")) ? byDay switch
+                totals.Values.Sum(x => x.ChangeMap.ContainsKey(dateStr) ? byDay switch
                 {
-                    Models.Metric.Lines => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Lines,
-                    Models.Metric.Files => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Files,
-                    Models.Metric.Commits => x.ChangeMap[fromDate.AddDays(i).ToString("yyyy-MM-dd")].Commits,
+                    Models.Metric.Lines => x.ChangeMap[dateStr].Lines,
+                    Models.Metric.Files => x.ChangeMap[dateStr].Files,
+                    Models.Metric.Commits => x.ChangeMap[dateStr].Commits,
                     _ => 0,
                 } : 0).ToString("N0")
             ));
@@ -229,7 +244,7 @@ public static class TablePrinter
                 Models.Metric.Files => x.ChangeMap.Sum(x => x.Value.Files),
                 Models.Metric.Commits => x.TotalCommits,
                 _ => 0,
-            }).ToString("N0")
+            }).ToString("N0") + asterisk
         ));
 
         IEnumerable<AuthorData> sorted = totals.Values.OrderByDescending(x => byDay switch
@@ -249,32 +264,34 @@ public static class TablePrinter
             var runningTotal = 0;
             for (int i = 0; i <= days; i++)
             {
-                var date = fromDate.AddDays(i).ToString("yyyy-MM-dd");
+                var currentDate = fromDate.AddDays(i);
+                var date = currentDate.ToString("yyyy-MM-dd");
+                bool isHidden = hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek);
+
+                int dayValue = 0;
                 if (authorData.ChangeMap.ContainsKey(date))
                 {
-                    var total = byDay switch
+                    dayValue = byDay switch
                     {
                         Models.Metric.Lines => authorData.ChangeMap[date].Lines,
                         Models.Metric.Files => authorData.ChangeMap[date].Files,
                         Models.Metric.Commits => authorData.ChangeMap[date].Commits,
                         _ => 0,
                     };
-                    runningTotal += total;
-                    row.Add(total.ToString("N0"));
                 }
-                else
-                {
-                    row.Add("0");
-                }
+                runningTotal += dayValue;
+
+                if (isHidden) continue;
+                row.Add(dayValue == 0 ? "0" : dayValue.ToString("N0"));
             }
-            row.Add(runningTotal.ToString("N0"));
+            row.Add(runningTotal.ToString("N0") + asterisk);
             table.AddRow(row.ToArray());
         }
 
         AnsiConsole.Write(table);
     }
 
-    public static void PrintTableByDayFlipped(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false)
+    public static void PrintTableByDayFlipped(Metric byDay, Dictionary<string, AuthorData> totals, DateTimeOffset fromDate, DateTimeOffset toDate, bool hideSummary = false, bool reverse = false, DayOfWeek[]? hideDays = null)
     {
         var days = (toDate - fromDate).Days;
         var table = new Table();
@@ -283,6 +300,7 @@ public static class TablePrinter
         table.BorderStyle = Style.Parse("red");
         table.AddColumn(new TableColumn("Date").Footer("Summary"));
         table.ShowFooters = !hideSummary;
+        var asterisk = hideDays is { Length: > 0 } && HasHiddenDayData(totals, hideDays) ? "*" : "";
 
         var grandTotal = 0;
         foreach (var authorData in totals.Values)
@@ -297,7 +315,7 @@ public static class TablePrinter
                     Models.Metric.Commits => x.Value.Commits,
                     _ => 0,
                 };
-            }).ToString("N0"));
+            }).ToString("N0") + asterisk);
             table.AddColumn(column);
         }
 
@@ -305,13 +323,15 @@ public static class TablePrinter
 
         foreach (int i in reverse ? Enumerable.Range(0, days + 1).Reverse() : Enumerable.Range(0, days + 1))
         {
-            var date = fromDate.AddDays(i).ToString("MM-dd");
-            var dayOfWeek = fromDate.AddDays(i).DayOfWeek.ToString().Substring(0, 2);
+            var currentDate = fromDate.AddDays(i);
+            if (hideDays is { Length: > 0 } && hideDays.Contains(currentDate.DayOfWeek)) continue;
+            var date = currentDate.ToString("MM-dd");
+            var dayOfWeek = currentDate.DayOfWeek.ToString().Substring(0, 2);
             List<string> row = [$"{date} {dayOfWeek}"];
             var runningTotal = 0;
             foreach (var authorData in totals.Values)
             {
-                var authorDate = fromDate.AddDays(i).ToString("yyyy-MM-dd");
+                var authorDate = currentDate.ToString("yyyy-MM-dd");
                 if (authorData.ChangeMap.ContainsKey(authorDate))
                 {
                     var total = byDay switch
@@ -334,8 +354,27 @@ public static class TablePrinter
             table.AddRow(row.ToArray());
         }
 
-        table.Columns.Last().Footer(grandTotal.ToString("N0"));
+        // For Hide mode, grandTotal from visible rows doesn't include hidden day data
+        if (hideDays is { Length: > 0 })
+        {
+            grandTotal = totals.Values.Sum(a => a.ChangeMap.Sum(x => byDay switch
+            {
+                Models.Metric.Lines => x.Value.Lines,
+                Models.Metric.Files => x.Value.Files,
+                Models.Metric.Commits => x.Value.Commits,
+                _ => 0,
+            }));
+        }
+
+        table.Columns.Last().Footer(grandTotal.ToString("N0") + asterisk);
 
         AnsiConsole.Write(table);
     }
+
+    private static bool IsSkippedDay(DateTimeOffset date, DayOfWeek[]? days) =>
+        days is { Length: > 0 } && days.Contains(date.DayOfWeek);
+
+    private static bool HasHiddenDayData(Dictionary<string, AuthorData> totals, DayOfWeek[] hideDays) =>
+        totals.Values.Any(a => a.ChangeMap.Keys.Any(dateStr =>
+            DateTime.TryParse(dateStr, out var date) && hideDays.Contains(date.DayOfWeek)));
 }

@@ -105,6 +105,30 @@ var ignoreDefaultsOption = new Option<bool>("--ignore-defaults")
     Description = "Ignore default found in .gitcontrib"
 };
 
+var excludeDaysOption = new Option<string?>("--exclude-days")
+{
+    Description = "Comma-separated days to completely exclude (e.g. su,sa). Counts are removed from totals.",
+    Arity = ArgumentArity.ExactlyOne
+};
+excludeDaysOption.Validators.Add(result =>
+{
+    if (result.Tokens.Count == 0) return;
+    try { Utils.ParseDaysList(result.Tokens.Single().Value); }
+    catch (ArgumentException ex) { result.AddError(ex.Message); }
+});
+
+var hideDaysOption = new Option<string?>("--hide-days")
+{
+    Description = "Comma-separated days to hide from display but include in totals marked with * (e.g. su,sa)",
+    Arity = ArgumentArity.ExactlyOne
+};
+hideDaysOption.Validators.Add(result =>
+{
+    if (result.Tokens.Count == 0) return;
+    try { Utils.ParseDaysList(result.Tokens.Single().Value); }
+    catch (ArgumentException ex) { result.AddError(ex.Message); }
+});
+
 var rootCommand = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.GetName().Version} gives statistics by authors to the project.")
 {
     repoPathArgument,
@@ -119,7 +143,9 @@ var rootCommand = new RootCommand($"Git Contrib v{Assembly.GetEntryAssembly()?.G
     authorLimitOption,
     ignoreAuthorsOption,
     ignoreFilesOption,
-    ignoreDefaultsOption
+    ignoreDefaultsOption,
+    excludeDaysOption,
+    hideDaysOption
 };
 
 rootCommand.SetAction(async (parseResult, cancellationToken) =>
@@ -135,6 +161,11 @@ rootCommand.SetAction(async (parseResult, cancellationToken) =>
     var ignoreAuthors = parseResult.GetValue(ignoreAuthorsOption);
     var ignoreFiles = parseResult.GetValue(ignoreFilesOption);
     var ignoreDefaults = parseResult.GetValue(ignoreDefaultsOption);
+    var excludeDaysRaw = parseResult.GetValue(excludeDaysOption);
+    var hideDaysRaw = parseResult.GetValue(hideDaysOption);
+
+    var excludeDays = !string.IsNullOrWhiteSpace(excludeDaysRaw) ? Utils.ParseDaysList(excludeDaysRaw) : Array.Empty<DayOfWeek>();
+    var hideDays = !string.IsNullOrWhiteSpace(hideDaysRaw) ? Utils.ParseDaysList(hideDaysRaw) : Array.Empty<DayOfWeek>();
 
     var defaultOptions = new ConfigOptions(path);
 
@@ -171,7 +202,9 @@ rootCommand.SetAction(async (parseResult, cancellationToken) =>
         HideSummary = hideSummary,
         IgnoreAuthors = ignoreAuthors ?? [],
         IgnoreFiles = ignoreFiles ?? [],
-        IgnoreDefaults = ignoreDefaults
+        IgnoreDefaults = ignoreDefaults,
+        ExcludeDays = excludeDays,
+        HideDays = hideDays
     };
 
     if (!options.IgnoreDefaults && !defaultOptions.IsEmpty)

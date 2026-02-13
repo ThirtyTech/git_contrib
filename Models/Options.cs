@@ -38,6 +38,8 @@ public class Options
     public string[] IgnoreAuthors { get; set; } = [];
     public string[] IgnoreFiles { get; set; } = [];
     public bool IgnoreDefaults { get; set; }
+    public DayOfWeek[] ExcludeDays { get; set; } = [];
+    public DayOfWeek[] HideDays { get; set; } = [];
     public void MergeOptions(ConfigOptions configOptions)
     {
         if (configOptions == null || configOptions.IsEmpty)
@@ -157,4 +159,6 @@ public enum Format
     BarChart,
     None
 }
+
+
 

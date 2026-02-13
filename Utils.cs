@@ -155,4 +155,56 @@ public static class Utils
 
         return false;
     }
+
+    private static readonly Dictionary<string, DayOfWeek> DayAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["su"] = DayOfWeek.Sunday,
+        ["sun"] = DayOfWeek.Sunday,
+        ["sunday"] = DayOfWeek.Sunday,
+        ["mo"] = DayOfWeek.Monday,
+        ["mon"] = DayOfWeek.Monday,
+        ["monday"] = DayOfWeek.Monday,
+        ["tu"] = DayOfWeek.Tuesday,
+        ["tue"] = DayOfWeek.Tuesday,
+        ["tues"] = DayOfWeek.Tuesday,
+        ["tuesday"] = DayOfWeek.Tuesday,
+        ["we"] = DayOfWeek.Wednesday,
+        ["wed"] = DayOfWeek.Wednesday,
+        ["wednesday"] = DayOfWeek.Wednesday,
+        ["th"] = DayOfWeek.Thursday,
+        ["thu"] = DayOfWeek.Thursday,
+        ["thur"] = DayOfWeek.Thursday,
+        ["thurs"] = DayOfWeek.Thursday,
+        ["thursday"] = DayOfWeek.Thursday,
+        ["fr"] = DayOfWeek.Friday,
+        ["fri"] = DayOfWeek.Friday,
+        ["friday"] = DayOfWeek.Friday,
+        ["sa"] = DayOfWeek.Saturday,
+        ["sat"] = DayOfWeek.Saturday,
+        ["saturday"] = DayOfWeek.Saturday,
+    };
+
+    public static bool TryParseDayOfWeek(string input, out DayOfWeek day)
+    {
+        return DayAliases.TryGetValue(input.Trim(), out day);
+    }
+
+    public static DayOfWeek[] ParseDaysList(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return [];
+        var parts = input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var days = new List<DayOfWeek>();
+        foreach (var part in parts)
+        {
+            if (TryParseDayOfWeek(part, out var day))
+            {
+                if (!days.Contains(day)) days.Add(day);
+            }
+            else
+            {
+                throw new ArgumentException($"Unknown day name: '{part}'. Use names like su, mon, tues, wednesday, etc.");
+            }
+        }
+        return days.ToArray();
+    }
 }

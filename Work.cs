@@ -79,19 +79,17 @@ public static class Work
     public static async Task<IEnumerable<AuthorData>?> DoWork_Internal(Options options)
     {
 
-        if (options.Format == Models.Format.Table)
+        ValidateOptions(options);
+
+        if (options.Format == Format.Table)
         {
             Console.WriteLine("Processing directory: " + options.Path);
         }
 
 
-        int maxDates = (int)Math.Round((options.ToDate - options.FromDate).TotalDays);
-
-        var dates = Enumerable.Range(0, maxDates)
-                              .Select(i => options.FromDate.AddDays(i).ToString("yyyy-MM-dd"))
-                              .ToList();
-
-        var dateMap = dates.ToHashSet();
+        var hasDateFilter = options.FromDate != DateTimeOffset.MinValue;
+        var startDate = options.FromDate.Date;
+        var endDate = options.ToDate.Date;
 
         await Cli.Wrap("git")
             .WithValidation(CommandResultValidation.None)
@@ -135,8 +133,14 @@ public static class Work
 
                 if (line.StartsWith('^'))
                 {
-                    var parts = line.Split('|');
-                    var commit = parts[0][1..];
+                    var parts = line[1..].Split('|', 4);
+                    if (parts.Length < 4)
+                    {
+                        skipUntilNextCommit = true;
+                        continue;
+                    }
+
+                    var commit = parts[0];
                     var date = parts[1];
                     var author = parts[2].Replace("[", "{").Replace("]", "}");
                     var email = parts[3].Trim('<', '>');
@@ -146,11 +150,13 @@ public static class Work
                         throw new Exception($"Invalid date format in line: {line}");
                     }
                     var authorDateStr = authorDate.ToString("yyyy-MM-dd");
-                    if (!dateMap.Contains(authorDateStr))
+
+                    if (hasDateFilter && (authorDate.Date < startDate || authorDate.Date > endDate))
                     {
                         skipUntilNextCommit = true;
                         continue;
                     }
+
                     if (options.IgnoreAuthors.Any(author.Contains))
                     {
                         skipUntilNextCommit = true;
@@ -199,6 +205,11 @@ public static class Work
                 else if (char.IsDigit(line[0]) && currentAuthor != null && currentDate != null && !skipUntilNextCommit)
                 {
                     var parts = line.Split("\t", StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 3)
+                    {
+                        continue;
+                    }
+
                     if (options.IgnoreFiles.Any(parts[2].Contains) || ExcludeExtensions.Any(parts[2].EndsWith))
                     {
                         continue;
@@ -219,15 +230,49 @@ public static class Work
             }
         }
 
+        if (options.ExcludeDays.Length > 0)
+        {
+            foreach (var author in totals.Values)
+            {
+                var excludeKeys = author.ChangeMap.Keys
+                    .Where(dateStr => DateTime.TryParse(dateStr, out var date) &&
+                        options.ExcludeDays.Contains(date.DayOfWeek))
+                    .ToList();
+                foreach (var key in excludeKeys)
+                {
+                    author.ChangeMap.Remove(key);
+                }
+            }
+            var emptyAuthors = totals.Where(kvp => kvp.Value.ChangeMap.Count == 0).Select(kvp => kvp.Key).ToList();
+            foreach (var key in emptyAuthors)
+            {
+                totals.Remove(key);
+            }
+        }
+
+        if (totals.Count == 0)
+        {
+            if (options.Format == Format.Table)
+            {
+                Console.WriteLine("No results");
+            }
+            else if (options.Format == Format.Json)
+            {
+                Console.WriteLine("{}");
+            }
+
+            return null;
+        }
+
         if (options.Format == Format.Table)
         {
             if (options.Metric == null || options.Metric == Models.Metric.All)
             {
-                TablePrinter.PrintTableTotalsSelector(totals, options.HideSummary, options.Reverse, options.AuthorLimit);
+                TablePrinter.PrintTableTotalsSelector(totals, options.HideSummary, options.Reverse, options.AuthorLimit, options.HideDays);
             }
             else
             {
-                TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, options.SwapAxes, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse);
+                TablePrinter.PrintTableByDaySelector(options.Metric ?? Models.Metric.Lines, options.SwapAxes, totals, options.FromDate, options.ToDate, options.HideSummary, options.Reverse, options.HideDays);
             }
         }
         else if (options.Format == Format.Json)
@@ -316,5 +361,31 @@ public static class Work
         }
 
         return [.. totals.Select(x => x.Value)];
+    }
+
+    private static void ValidateOptions(Options options)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        if (string.IsNullOrWhiteSpace(options.Path))
+        {
+            throw new ArgumentException("Options.Path is required", nameof(options));
+        }
+
+        if (!Directory.Exists(options.Path))
+        {
+            throw new DirectoryNotFoundException($"Directory not found: {options.Path}");
+        }
+
+        options.IgnoreAuthors ??= [];
+        options.IgnoreFiles ??= [];
+
+        if (options.FromDate != DateTimeOffset.MinValue && options.ToDate < options.FromDate)
+        {
+            throw new ArgumentException("ToDate must be greater than or equal to FromDate");
+        }
     }
 }
